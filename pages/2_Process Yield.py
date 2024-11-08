@@ -1,182 +1,316 @@
 import streamlit as st
 import pandas as pd
-import plotly.express as px
-from sklearn.linear_model import LinearRegression
-from sklearn.model_selection import train_test_split
-from sklearn.impute import SimpleImputer
-import numpy as np
+import openpyxl
+import os
+from openpyxl.utils import get_column_letter
+from openpyxl.utils.dataframe import dataframe_to_rows
 
-# App Title
-st.set_page_config(page_title="Process Yield Analysis!!!", page_icon=":bar_chart:", layout="wide")
-st.title("Process Yield Analysis")
+# Set the page layout to wide
+st.set_page_config(layout="wide")
 
-# File uploader for Excel/CSV/XLSM files
-uploaded_file = st.file_uploader("Choose an Excel/CSV/XLSM file", type=["xlsx", "csv", "xlsm"])
+# Title of the app
+st.title(":bar_chart: Process Mapping & :hourglass: Cycle Time Simulation")
 
-if uploaded_file:
-    # Load data from the uploaded file
-    @st.cache_data
-    def load_data(file):
-        if file.name.endswith('.csv'):
-            df = pd.read_csv(file)
-        else:
-            df = pd.read_excel(file, sheet_name=None)
-        return df
+# Sidebar configuration
+st.sidebar.header("Category")
 
-    data = load_data(uploaded_file)
+# Create an expander for "Offers"
+with st.sidebar.expander("Analysis"):
+    # Create checkboxes for each offer
+    new_analysis = st.checkbox("New")
+    existing_analysis = st.checkbox("Existing")
 
-    # Initialize session state to store edited data for each sheet
-    if 'edited_sheets' not in st.session_state:
-        st.session_state.edited_sheets = {}
+# Display selected analysis
+if new_analysis:
+    st.subheader("New Analysis")
 
-    # Assuming 'data' is a dictionary of DataFrames loaded from an Excel file
-    if isinstance(data, dict):
-        sheet_name = st.selectbox("Select the sheet", data.keys())
-
-        # Check if the sheet has been edited before; if so, load the edited version
-        if sheet_name in st.session_state.edited_sheets:
-            st.session_state.df = st.session_state.edited_sheets[sheet_name]
-        else:
-            selected_data = data[sheet_name]
-            st.session_state.df = pd.DataFrame(selected_data)  # Load original data from file
-
-    # Display data in a table
-    st.subheader("Data Table")
-    edited_data = st.data_editor(st.session_state.df)
-
-    # Create buttons side by side for adding new rows and saving the table
-    col1, col2 = st.columns([1, 1])
-
-    # Create a separate save button for general edits in the table
-    with col1:
-        if st.button("Save Edited Table"):
-            # Save the edited data in the session state
-            st.session_state.edited_sheets[sheet_name] = edited_data
-            
-            # Save all changes made in the table to the file
-            with pd.ExcelWriter(uploaded_file.name, engine="openpyxl", mode='a', if_sheet_exists='overlay') as writer:
-                edited_data.to_excel(writer, sheet_name=sheet_name, index=False)
-            st.success("Table saved successfully!")
-            st.rerun()
+    # File uploader for the first Excel file (simulation_db.xlsx, sheet 'Process_CT')
+    uploaded_file_simulation_db = st.file_uploader("Upload the simulation_db.xlsx file", type=["xlsx"])
     
-    with col2:
-        if st.button("Add New Row"):
-            # Create a new row with NaN values
-            new_row = pd.DataFrame({col: [np.nan] for col in edited_data.columns})
-            # Append the new row to the DataFrame
-            st.session_state.df = pd.concat([st.session_state.df, new_row], ignore_index=True)
-            st.session_state.edited_sheets[sheet_name] = st.session_state.df  # Update session state with new row
-            st.rerun()  # Rerun the app to update the data editor with the new row
+    # Load data if the file is uploaded
+    if uploaded_file_simulation_db:
+        # Load the specific sheet from simulation_db.xlsx for 'Process_CT'
+        df = pd.read_excel(uploaded_file_simulation_db, sheet_name='Process_CT')
 
-    # Create buttons side by side for removing rows and saving removed rows
-    col3, col4 = st.columns([1, 1])
+        # Extract the required values
+        shift_hr_day = df.at[0, 'Shift Hr/day']
+        days_week = df.at[0, 'Days/Week']
+        weeks_year = df.at[0, 'Weeks/Year']
+        hr_year_shift = df.at[0, 'Hr/Year (1 Shift)']
+        overall_labor_efficiency = df.at[0, 'Overall Labor Efficiency']
+        total_batch_setup_time = df.at[0, 'Total Batch Setup Time, sec']
+        total_cycle_time = df.at[0, 'Total Cycle Time, sec']
+        
+        # Hide the dataframe
+        st.write("")
 
-    with col3:
-        row_to_delete = st.selectbox("Select row to delete", st.session_state.df.index)
-        if st.button("Remove Row"):
-            if 'removed_rows' not in st.session_state:
-                st.session_state.removed_rows = pd.DataFrame()
-            st.session_state.removed_rows = pd.concat([st.session_state.removed_rows, st.session_state.df.loc[[row_to_delete]]])
-            st.session_state.df = st.session_state.df.drop(row_to_delete).reset_index(drop=True)
-            st.session_state.edited_sheets[sheet_name] = st.session_state.df  # Update session state with removed row
-            st.rerun()
+        # Create text inputs for each value
+        col1, col2, col3 = st.columns(3)
 
-    with col4:
-        if st.button("Save Removed Rows"):
-            if 'removed_rows' in st.session_state and not st.session_state.removed_rows.empty:
-                # Load the entire Excel file into a dictionary of DataFrames
-                excel_file = pd.read_excel(uploaded_file.name, sheet_name=None)
-                # Access the specific sheet and update it
-                excel_file[sheet_name] = st.session_state.df
-                # Save all sheets back to the Excel file
-                with pd.ExcelWriter(uploaded_file.name, engine="openpyxl", mode="w") as writer:
-                    for sheet_name, sheet_data in excel_file.items():
-                        sheet_data.to_excel(writer, sheet_name=sheet_name, index=False)
-                st.success("Removed rows saved successfully!")
-                st.rerun()
+        with col1:
+            shift_hr_day_input = st.text_input('Shift Hr/day', value=shift_hr_day, disabled=True)
+            weeks_year_input = st.text_input('Weeks/Year', value=weeks_year, disabled=True)
+            overall_labor_efficiency_input = st.text_input('Overall Labor Efficiency', value=overall_labor_efficiency, disabled=True)
 
-    # OCC Ranking Table
-    OCC_Ranking_Table = {
-        'OCC_Ranking': [10, 9, 8, 7, 6, 5, 4, 3, 2, 1],
-        'OCC_Incidents_Per_Item': [0.1, 0.05, 0.02, 0.01, 0.002, 0.0005, 0.0001, 0.00001, 0.000001, 0]
-    }
-    occ_ranking_df = pd.DataFrame(OCC_Ranking_Table)
+        with col2:
+            days_week_input = st.text_input('Days/Week', value=days_week, disabled=True)
+            hr_year_shift_input = st.text_input('Hr/Year (1 Shift)', value=hr_year_shift, disabled=True)
+            total_batch_setup_time_input = st.text_input('Total Batch Setup Time, sec', value=total_batch_setup_time)
 
-    # Compute OMI based on OCC_Ranking
-    edited_data = edited_data.merge(occ_ranking_df, left_on='OCC', right_on='OCC_Ranking', how='left')
-    edited_data['OMI'] = 1 - edited_data['OCC_Incidents_Per_Item']
+        with col3:
+            total_cycle_time_input = st.text_input('Total Cycle Time, sec', value=total_cycle_time)
 
-    # Scatter plot
-    st.subheader("Scatter Plot of OCC vs OMI")
-    fig = px.scatter(edited_data, x='Process step/Input', y='OMI', text='OCC',
-                     title='Scatter Plot of OCC vs OMI')
-    st.plotly_chart(fig)
+        # File uploader for the second Excel file (xydata.xlsx, sheet 'xydata_version')
+        uploaded_file_xydata = st.file_uploader("Upload the xydata.xlsx file", type=["xlsx"])
 
-    # Subheading for Prediction Model
-    st.subheader("Prediction Model")
+        # File uploader for the third Excel file (simulation_db.xlsx, sheet 'SMD_Package_Feeder_Master')
+        uploaded_file_feeder_master = st.file_uploader("Upload the feeder master Excel file (simulation_db.xlsx)", type=["xlsx"])
 
-    # Input fields for OCC and Value Lookup
-    st.subheader("Input Data for Prediction")
-    occ_input = st.number_input("Enter OCC value")
+        # Load the data if both files are uploaded
+        if uploaded_file_xydata and uploaded_file_feeder_master:
+            # Load the specific sheet from xydata.xlsx
+            df2 = pd.read_excel(uploaded_file_xydata, sheet_name='xydata_version')
+            
+            # Load the specific sheet from simulation_db.xlsx for feeder master
+            feeder_master = pd.read_excel(uploaded_file_feeder_master, sheet_name='SMD_Package_Feeder_Master')
+            
+            # Perform VLOOKUP equivalent using merge
+            df3 = df2.merge(feeder_master, left_on="Package", right_on="Package_Master", how="left")
 
-    # Prepare data for the model
-    # Training on a single feature (OCC)
-    X = edited_data[['OCC']]
-    y = edited_data['OMI']
+            # Calculate values for the cycle time and other metrics
+            component_count = df2['REFDES'].count()
+            total_cycle_time_calc = df3['Cycle Time_Master'].sum()
+            bottom_cycle_time = df3[df3['Topbottom'] == 'NO']['Cycle Time_Master'].sum()
+            top_cycle_time = df3[df3['Topbottom'] == 'YES']['Cycle Time_Master'].sum()
 
-    # Impute missing values with the mean
-    imputer = SimpleImputer(strategy='mean')
-    X_imputed = imputer.fit_transform(X)
+            # Create text input boxes for the calculated values
+            with col1:
+                solder_joints_input = st.text_input('Solder Joints')
 
-    # Split data into train and test sets
-    X_train, X_test, y_train, y_test = train_test_split(X_imputed, y, test_size=0.2, random_state=42)
+            with col2:
+                component_count_input = st.text_input('Component Count', value=component_count, disabled=True)
 
-    # Train the model
-    model = LinearRegression()
-    model.fit(X_train, y_train)
+            with col3:
+                bottom_cycle_time_input = st.text_input('Bottom Cycle Time', value=bottom_cycle_time, disabled=True)
+                top_cycle_time_input = st.text_input('Top Cycle Time', value=top_cycle_time, disabled=True)
 
-    cl1, cl2 = st.columns(2)
+            # Save merged data to 'Output' sheet in the same workbook
+            temp_path = 'D:/python/working_folder/ProcessMap&CTSimulation/xydata.xlsx'
+            with open(temp_path, "wb") as f:
+                f.write(uploaded_file_xydata.getbuffer())
 
-    with cl1:
-        # Predict and display the results
-        st.subheader("Actual vs. Prediction Table")
-        predictions = model.predict(X_test)
-        results = pd.DataFrame({'Actual': y_test, 'Predicted': predictions})
-        st.write(results)
+            # Open the workbook and work with the 'Output' sheet
+            wb = openpyxl.load_workbook(temp_path)
 
-    with cl2:
-        # Display DataFrame as a table
-        st.subheader("OCC Ranking Table")
-        st.table(occ_ranking_df)
+            # Check if the 'Output' sheet already exists
+            if 'Output' in wb.sheetnames:
+                output_sheet = wb['Output']
+                # Clear the contents of the existing sheet by specifying a valid range
+                max_col_letter = get_column_letter(output_sheet.max_column)  # Convert column index to letter
+                max_row = output_sheet.max_row
+                for row in output_sheet[f"A1:{max_col_letter}{max_row}"]:
+                    for cell in row:
+                        cell.value = None
+            else:
+                # Create a new sheet named 'Output'
+                output_sheet = wb.create_sheet('Output')
 
-    # Predict OMI using the model for input data
-    # Predict using a single feature (OCC)
-    predicted_omi = model.predict(np.array([[occ_input]]))
-    st.write(f"Predicted OMI for input data: {predicted_omi[0]}")
+            # Write df3 to 'Output' starting from cell A1
+            for r_idx, row in enumerate(dataframe_to_rows(df3, index=False, header=True), start=1):
+                for c_idx, value in enumerate(row, start=1):
+                    output_sheet.cell(row=r_idx, column=c_idx, value=value)
 
-    # Calculate CP and CPK
-    st.subheader("Process Capability Statistics")
+            # Save the updated workbook
+            wb.save(temp_path)
+            st.success("Data has been successfully saved to the 'Output' sheet in xydata.xlsx.")
 
-    def calculate_cp(data):
-        USL = data['OMI'].max()
-        LSL = data['OMI'].min()
-        sigma = data['OMI'].std()
-        cp = (USL - LSL) / (6 * sigma)
-        return cp
+            # # Write the merged DataFrame to the sheet
+            # new_sht.range("A1").options(index=False).value = df3
+            # new_sht.range("J1:L1").color = (0, 204, 0)
 
-    def calculate_cpk(data):
-        USL = data['OMI'].max()
-        LSL = data['OMI'].min()
-        mean = data['OMI'].mean()
-        sigma = data['OMI'].std()
-        cpu = (USL - mean) / (3 * sigma)
-        cpl = (mean - LSL) / (3 * sigma)
-        cpk = min(cpu, cpl)
-        return cpk
+            # Create an empty DataFrame with the defined columns
+            initial_df = pd.DataFrame(columns=['Side', 'Stage', 'Batch Set up Time', 'Process Cycle Time'])
 
-    cp = calculate_cp(edited_data)
-    cpk = calculate_cpk(edited_data)
-    st.write(f"CP (Process Capability): {cp}")
-    st.write(f"CPK (Process Capability Index): {cpk}")
+            # Initialize session state variables
+            if 'data' not in st.session_state:
+                st.session_state['data'] = initial_df
 
-    st.success("Predictive model built and predictions displayed successfully!")
+            if 'filtered_data' not in st.session_state:
+                st.session_state['filtered_data'] = initial_df
+
+            # Initialize dropdown values if not set
+            if 'side' not in st.session_state:
+                st.session_state['side'] = ''
+
+            if 'stage' not in st.session_state:
+                st.session_state['stage'] = ''
+
+            if 'batch_setup_time' not in st.session_state:
+                st.session_state['batch_setup_time'] = ''
+
+            if 'process_cycle_time' not in st.session_state:
+                st.session_state['process_cycle_time'] = ''
+
+            if 'reset_selectbox' not in st.session_state:
+                st.session_state['reset_selectbox'] = 0
+
+            # Display the headings
+            header_cols = st.columns(4)
+            header_cols[0].markdown("<h6 style='text-align: center;'>Side</h6>", unsafe_allow_html=True)
+            header_cols[1].markdown("<h6 style='text-align: center;'>Stage</h6>", unsafe_allow_html=True)
+            header_cols[2].markdown("<h6 style='text-align: center;'>Batch Set up Time</h6>", unsafe_allow_html=True)
+            header_cols[3].markdown("<h6 style='text-align: center;'>Process Cycle Time</h6>", unsafe_allow_html=True)
+
+            # Function to display a row
+            def display_row():
+                row_cols = st.columns(4)
+                
+                # Select boxes to select the “Side” and “Stage”
+                side = row_cols[0].selectbox('', [''] + list(df['Side'].unique()), key=f'side_{st.session_state.reset_selectbox}')
+                stage = row_cols[1].selectbox('', [''] + list(df[df['Side'] == side]['Stage'].unique()) if side else [''], key=f'stage_{st.session_state.reset_selectbox}')
+                
+                # Display the values associated with “Stage” from keyvalue “Batch Set up Time” and “Process Cycle Time”
+                batch_setup_time = df[(df['Side'] == side) & (df['Stage'] == stage)]['Batch Set up Time'].values[0] if side and stage else ''
+                process_cycle_time = df[(df['Side'] == side) & (df['Stage'] == stage)]['Process Cycle Time'].values[0] if side and stage else ''
+
+                with row_cols[2]:
+                    batch_setup_time_input = st.text_input('', value=batch_setup_time, key=f'batch_setup_time_{st.session_state.reset_selectbox}')
+
+                with row_cols[3]:
+                    process_cycle_time_input = st.text_input('', value=process_cycle_time, key=f'process_cycle_time_{st.session_state.reset_selectbox}')
+
+            # Display the row
+            display_row()
+
+            # Add Save, Clear, and Delete buttons
+            save_col, clear_col, delete_col3, delete_col4 = st.columns(4)
+            with save_col:
+                if st.button('Save'):
+                    # Save the current selection to session state data
+                    side = st.session_state[f'side_{st.session_state.reset_selectbox}']
+                    stage = st.session_state[f'stage_{st.session_state.reset_selectbox}']
+                    batch_setup_time = st.session_state[f'batch_setup_time_{st.session_state.reset_selectbox}']
+                    process_cycle_time = st.session_state[f'process_cycle_time_{st.session_state.reset_selectbox}']
+
+                    if side and stage:
+                        new_row = {
+                            'Side': side,
+                            'Stage': stage,
+                            'Batch Set up Time': batch_setup_time,
+                            'Process Cycle Time': process_cycle_time
+                        }
+                        if not ((st.session_state['filtered_data']['Side'] == side) & 
+                                (st.session_state['filtered_data']['Stage'] == stage)).any():
+                            st.session_state['filtered_data'] = pd.concat([st.session_state['filtered_data'], pd.DataFrame([new_row])], ignore_index=True)
+                            st.success("Record added successfully. Select Your Next Side & Stage")
+                        else:
+                            st.warning("Record Already Exists in the Table")
+
+            with clear_col:
+                if st.button('Clear'):
+                    # Increment the key to reset the select boxes
+                    st.session_state['reset_selectbox'] += 1
+
+            # Display the updated dataframe with a header
+            st.markdown("## Process Mapping")
+            st.dataframe(st.session_state['filtered_data'])
+
+            # Provide inputs for file name, sheet name, and path
+            st.markdown("### Save Data to Excel")
+
+            file_name = st.text_input("Enter the Excel file name (with .xlsx extension):")
+            sheet_name = st.text_input("Enter the sheet name:")
+            save_path = st.text_input("Enter the path to save the Excel file:")
+
+            # Add a button to save the entire DataFrame
+            if st.button("Save DataFrame to Excel"):
+                full_path = os.path.join(save_path, file_name)
+
+                # Check if the file and sheet already exist
+                if os.path.exists(full_path):
+                    with pd.ExcelWriter(full_path, engine='openpyxl', mode='a') as writer:
+                        if sheet_name in writer.sheets:
+                            st.error(f"The sheet '{sheet_name}' already exists in the file '{file_name}'. Please choose a different sheet name.")
+                        else:
+                            # Prepare the DataFrame for saving
+                            final_df = st.session_state['filtered_data'].copy()
+                            
+                            # Add the additional fields in the first row, without overwriting existing data
+                            for col, value in zip(
+                                ['Max Overall PCBA CT', 'Shift Hr/day', 'Days/Week', 'Weeks/Year', 'Hr/Year (1 Shift)', 
+                                'Overall Labor Efficiency', 'Total Batch Setup Time, sec', 'Total Cycle Time, sec', 
+                                'Bottom Cycle Time', 'Top Cycle Time', 'Solder Joints', 'Component Count'],
+                                [total_cycle_time_calc, shift_hr_day, days_week, weeks_year, hr_year_shift, overall_labor_efficiency, 
+                                total_batch_setup_time, total_cycle_time_calc, bottom_cycle_time, top_cycle_time, solder_joints_input, 
+                                component_count]):
+                                final_df.at[0, col] = value
+
+                            final_df.to_excel(writer, sheet_name=sheet_name, index=False)
+                            st.success(f"DataFrame saved successfully to {sheet_name} in {file_name}.")
+                else:
+                    with pd.ExcelWriter(full_path, engine='openpyxl') as writer:
+                        # Prepare the DataFrame for saving
+                        final_df = st.session_state['filtered_data'].copy()
+                        
+                        # Add the additional fields in the first row, without overwriting existing data
+                        for col, value in zip(
+                            ['Max Overall PCBA CT', 'Shift Hr/day', 'Days/Week', 'Weeks/Year', 'Hr/Year (1 Shift)', 
+                            'Overall Labor Efficiency', 'Total Batch Setup Time, sec', 'Total Cycle Time, sec', 
+                            'Bottom Cycle Time', 'Top Cycle Time', 'Solder Joints', 'Component Count'],
+                            [total_cycle_time_calc, shift_hr_day, days_week, weeks_year, hr_year_shift, overall_labor_efficiency, 
+                            total_batch_setup_time, total_cycle_time_calc, bottom_cycle_time, top_cycle_time, solder_joints_input, 
+                            component_count]):
+                            final_df.at[0, col] = value
+
+                        final_df.to_excel(writer, sheet_name=sheet_name, index=False)
+                        st.success(f"DataFrame saved successfully to {sheet_name} in {file_name}.")
+
+            # Add select box and delete button for deleting rows
+            if not st.session_state['filtered_data'].empty:
+                with delete_col3:
+                    row_to_delete = st.selectbox('Select Row to Delete', st.session_state['filtered_data'].index + 1, key='row_to_delete')
+                with delete_col4:
+                    if st.button('Delete'):
+                        # Delete the selected row
+                        st.session_state['filtered_data'] = st.session_state['filtered_data'].drop(st.session_state['filtered_data'].index[row_to_delete - 1]).reset_index(drop=True)
+                        st.rerun()
+                        
+                        # Save the updated DataFrame to the specified Excel sheet
+                        full_path = os.path.join(save_path, file_name)
+                        if os.path.exists(full_path):
+                            with pd.ExcelWriter(full_path, engine='openpyxl', mode='a') as writer:
+                                if sheet_name in writer.sheets:
+                                    st.error(f"The sheet '{sheet_name}' already exists in the file '{file_name}'. Please choose a different sheet name.")
+                                else:
+                                    final_df = st.session_state['filtered_data'].copy()
+                                    
+                                    # Add the additional fields in the first row, without overwriting existing data
+                                    for col, value in zip(
+                                        ['Max Overall PCBA CT', 'Shift Hr/day', 'Days/Week', 'Weeks/Year', 'Hr/Year (1 Shift)', 
+                                        'Overall Labor Efficiency', 'Total Batch Setup Time, sec', 'Total Cycle Time, sec', 
+                                        'Bottom Cycle Time', 'Top Cycle Time', 'Solder Joints', 'Component Count'],
+                                        [total_cycle_time_calc, shift_hr_day, days_week, weeks_year, hr_year_shift, overall_labor_efficiency, 
+                                        total_batch_setup_time, total_cycle_time_calc, bottom_cycle_time, top_cycle_time, solder_joints_input, 
+                                        component_count]):
+                                        final_df.at[0, col] = value
+
+                                    final_df.to_excel(writer, sheet_name=sheet_name, index=False)
+                                    st.success(f"Updated DataFrame saved to {sheet_name} in {file_name}.")
+                        else:
+                            with pd.ExcelWriter(full_path, engine='openpyxl') as writer:
+                                final_df = st.session_state['filtered_data'].copy()
+                                
+                                # Add the additional fields in the first row, without overwriting existing data
+                                for col, value in zip(
+                                    ['Max Overall PCBA CT', 'Shift Hr/day', 'Days/Week', 'Weeks/Year', 'Hr/Year (1 Shift)', 
+                                    'Overall Labor Efficiency', 'Total Batch Setup Time, sec', 'Total Cycle Time, sec', 
+                                    'Bottom Cycle Time', 'Top Cycle Time', 'Solder Joints', 'Component Count'],
+                                    [total_cycle_time_calc, shift_hr_day, days_week, weeks_year, hr_year_shift, overall_labor_efficiency, 
+                                    total_batch_setup_time, total_cycle_time_calc, bottom_cycle_time, top_cycle_time, solder_joints_input, 
+                                    component_count]):
+                                    final_df.at[0, col] = value
+
+                                final_df.to_excel(writer, sheet_name=sheet_name, index=False)
+                                st.success(f"Updated DataFrame saved to {sheet_name} in {file_name}.")
+
+                        st.experimental_rerun()
