@@ -6,6 +6,5 @@ matplotlib==3.9.2
 numpy==2.1.3
 LinearRegression
 scikit-learn
-os
 get_column_letter
 dataframe_to_rows
