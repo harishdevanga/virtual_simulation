@@ -281,11 +281,13 @@ if uploaded_file:
         with col2:
             if st.button("Save Edited Table"):
                 st.session_state.edited_sheets[sheet_name] = edited_data
-
-                with pd.ExcelWriter(uploaded_file.name, engine="openpyxl", mode='a', if_sheet_exists='overlay') as writer:
-                    edited_data.to_excel(writer, sheet_name=sheet_name, index=False)
-                st.success("Table saved successfully!")
-                st.rerun()
+                if uploaded_file is not None:
+                    with pd.ExcelWriter(uploaded_file.name, engine="openpyxl", mode='a', if_sheet_exists='overlay') as writer:
+                        edited_data.to_excel(writer, sheet_name=sheet_name, index=False)
+                    else:
+                        st.error("Please upload the 'IPC_FPY.xlsx' file.")
+                    st.success("Table saved successfully!")
+                    st.rerun()
 
         # Create buttons side by side for removing rows and saving removed rows
         col3, col4 = st.columns([1, 1])
