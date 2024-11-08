@@ -27,8 +27,11 @@ if uploaded_file:
         st.session_state.edited_sheets = {}
 
     # Assuming 'data' is a dictionary of DataFrames loaded from an Excel file
+    col5, col6, col7, col8, col9 = st.columns([1, 1, 1, 1, 1])
+    
     if isinstance(data, dict):
-        sheet_name = st.selectbox("Select the sheet", data.keys())
+        with col5:
+            sheet_name = st.selectbox("Select the sheet", data.keys())
 
         # Check if the sheet has been edited before; if so, load the edited version
         if sheet_name in st.session_state.edited_sheets:
@@ -38,15 +41,17 @@ if uploaded_file:
             st.session_state.df = pd.DataFrame(selected_data)  # Load original data from file
 
         # 1. Provide an option to select the product development stage
-        stages = ['MK0', 'MK1', 'MK2', 'MK3', 'X1']  # Add more stages if needed
-        selected_stage = st.selectbox("Select the product development stage", stages)
+        with col6:            
+            stages = ['MK0', 'MK1', 'MK2', 'MK3', 'X1']  # Add more stages if needed
+            selected_stage = st.selectbox("Select the product development stage", stages)
 
         # Display data in a table
         st.subheader("Data Table")
         edited_data = st.data_editor(st.session_state.df)
 
         # 2. Actual first pass yield input
-        actual_fpy = st.text_input("Enter Actual First Pass Yield (%)", value="")
+        with col7:
+            actual_fpy = st.text_input("Enter Actual First Pass Yield (%)", value="")
 
         if actual_fpy:
             try:
@@ -154,7 +159,8 @@ if uploaded_file:
                 st.error(f"Error calculating SUMPRODUCT and related values: {e}")
 
         # Enter Solder Joint
-        solder_joint_value = st.text_input("Enter No Of Solder Joint for Selected Stage", value="")
+        with col8:
+            solder_joint_value = st.text_input("Enter No Of Solder Joint", value="")
         if solder_joint_value:
             try:
                 solder_joint_value = float(solder_joint_value)
@@ -191,7 +197,8 @@ if uploaded_file:
 
 
         # Enter Test coverage
-        test_coverage_value = st.text_input("Enter Test coverage %, Ct", value="")
+        with col9:
+            test_coverage_value = st.text_input("Enter Test coverage %, Ct", value="")
         if test_coverage_value:
             try:
                 # Ensure valid conversion to float
