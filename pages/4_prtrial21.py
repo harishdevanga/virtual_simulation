@@ -284,8 +284,8 @@ if uploaded_file:
                 if uploaded_file is not None:
                     with pd.ExcelWriter(uploaded_file.name, engine="openpyxl", mode='a', if_sheet_exists='overlay') as writer:
                         edited_data.to_excel(writer, sheet_name=sheet_name, index=False)
-                    else:
-                        st.error("Please upload the 'IPC_FPY.xlsx' file.")
+                else:
+                    st.error("Please upload the 'IPC_FPY.xlsx' file.")
                     st.success("Table saved successfully!")
                     st.rerun()
 
