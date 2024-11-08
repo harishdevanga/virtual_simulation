@@ -42,7 +42,7 @@ if uploaded_file:
 
         # 1. Provide an option to select the product development stage
         with col6:            
-            stages = ['MK0', 'MK1', 'MK2', 'MK3', 'X1']  # Add more stages if needed
+            stages = ['MK0', 'MK1', 'MK2', 'MK3', 'X1', 'X1.1', 'X1.2']  # Add more stages if needed
             selected_stage = st.selectbox("Select the product development stage", stages)
 
         # Display data in a table
