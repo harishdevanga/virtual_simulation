@@ -285,7 +285,7 @@ if uploaded_file:
                     # Write each sheet in edited_sheets to the Excel writer
                     for sheet, df in st.session_state.edited_sheets.items():
                         df.to_excel(writer, sheet_name=sheet, index=False)
-                    writer.save()
+                    # writer.save()
                 
                 # Move the pointer to the beginning of the BytesIO buffer
                 output.seek(0)
