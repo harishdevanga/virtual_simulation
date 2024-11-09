@@ -109,7 +109,6 @@ if uploaded_file:
         st.subheader("Data Table")
         edited_data = st.data_editor(st.session_state.df)
 
-
         # 2. Provide an option to input "Test Efficiency %"
         with col7:
             test_efficiency = st.text_input("Enter Test Efficiency %", value="")
@@ -117,6 +116,10 @@ if uploaded_file:
             try:
                 test_efficiency_value = float(test_efficiency) / 100  # Convert percentage to decimal
                 
+                # Ensure the column for the selected stage is of numeric type
+                if selected_stage in edited_data.columns:
+                    edited_data[selected_stage] = pd.to_numeric(edited_data[selected_stage], errors='coerce')
+
                 # Update existing rows for "Test Efficiency %"
                 test_efficiency_row_idx = edited_data[edited_data['Data Points'] == "Test Efficiency %"].index
 
@@ -124,6 +127,7 @@ if uploaded_file:
                 if not test_efficiency_row_idx.empty:
                     edited_data.at[test_efficiency_row_idx[0], selected_stage] = test_efficiency_value
                 else:
+                    # Create a new row and add it to the DataFrame
                     new_row_te = pd.DataFrame({col: [np.nan] for col in edited_data.columns})
                     new_row_te.at[0, 'Data Points'] = "Test Efficiency %"
                     new_row_te.at[0, selected_stage] = test_efficiency_value
@@ -134,7 +138,8 @@ if uploaded_file:
             except ValueError:
                 st.error("Please enter a valid number for Test Efficiency %")
 
-        # 2. Provide an option to input "No. Solder Joints (N)"
+
+        # Provide an option to input "No. Solder Joints (N)"
         with col8:
             solder_joint_value = st.text_input("No. Solder Joints (N)", value="")
         if test_efficiency:
@@ -832,3 +837,4 @@ if uploaded_file:
 # Revision History  Date: 19-Oct-2024
 # (updated the code for Overall yield_Component & Overall yield_Placement)
 # Pending 2 error worning msg has to be resolved.
+# added a  errors='coerce' to to convert colum to numeric type TypeError: Cannot set non-string value '0.5' into a StringArray.
