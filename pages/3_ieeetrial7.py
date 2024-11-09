@@ -1,7 +1,8 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-
+import io
+import os
 
 # App Title
 st.set_page_config(page_title="IEEE Yield Analysis!!!", page_icon=":bar_chart:", layout="wide")
@@ -848,14 +849,42 @@ if uploaded_file:
         if st.button("Save Edited Table"):
             st.session_state.edited_sheets[sheet_name] = edited_data
 
+            # Use BytesIO to create an in-memory buffer
+            output = io.BytesIO()
+            
+            # Write the edited data to this buffer
+            with pd.ExcelWriter(output, engine="openpyxl") as writer:
+                # Write each sheet in edited_sheets to the Excel writer
+                for sheet, df in st.session_state.edited_sheets.items():
+                    df.to_excel(writer, sheet_name=sheet, index=False)
+                # writer.save()
+            
+            # Move the pointer to the beginning of the BytesIO buffer
+            output.seek(0)
 
-            with pd.ExcelWriter(uploaded_file.name, engine="openpyxl", mode='a', if_sheet_exists='overlay') as writer:
-                edited_data.to_excel(writer, sheet_name=sheet_name, index=False)
-            st.success("Table saved successfully!")
-            st.rerun()
+            # Generate the new filename based on the uploaded file name
+            original_filename = uploaded_file.name
+            file_root, file_ext = os.path.splitext(original_filename)
+            edited_filename = f"{file_root}_edited_data{file_ext}"
+            
+            # Provide download button to download updated Excel file with the new file name
+            st.download_button(
+                label="Download Updated Excel File",
+                data=output,
+                file_name=edited_filename,
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
+            st.success("Table saved and download ready!")
+
+
+            # with pd.ExcelWriter(uploaded_file.name, engine="openpyxl", mode='a', if_sheet_exists='overlay') as writer:
+            #     edited_data.to_excel(writer, sheet_name=sheet_name, index=False)
+            # st.success("Table saved successfully!")
+            # st.rerun()
 
 
 # Revision History  Date: 9-Nov-2024
 # (updated the code for Overall yield_Component & Overall yield_Placement)
 # Pending 2 error worning msg has to be resolved.
 # added a  errors='coerce' to to convert colum to numeric type TypeError: Cannot set non-string value '0.5' into a StringArray.
+# add file download method to deploy in streamlit cloud
