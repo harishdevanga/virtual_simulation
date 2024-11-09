@@ -5,6 +5,8 @@ from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
 from sklearn.impute import SimpleImputer
 import numpy as np
+import os
+import io
 
 # App Title
 st.set_page_config(page_title="Process Yield Analysis!!!", page_icon=":bar_chart:", layout="wide")
@@ -52,12 +54,40 @@ if uploaded_file:
         if st.button("Save Edited Table"):
             # Save the edited data in the session state
             st.session_state.edited_sheets[sheet_name] = edited_data
+                        
+            # Use BytesIO to create an in-memory buffer
+            output = io.BytesIO()
             
-            # Save all changes made in the table to the file
-            with pd.ExcelWriter(uploaded_file.name, engine="openpyxl", mode='a', if_sheet_exists='overlay') as writer:
-                edited_data.to_excel(writer, sheet_name=sheet_name, index=False)
-            st.success("Table saved successfully!")
-            st.rerun()
+            # Write the edited data to this buffer
+            with pd.ExcelWriter(output, engine="openpyxl") as writer:
+                # Write each sheet in edited_sheets to the Excel writer
+                for sheet, df in st.session_state.edited_sheets.items():
+                    df.to_excel(writer, sheet_name=sheet, index=False)
+                # writer.save()
+            
+            # Move the pointer to the beginning of the BytesIO buffer
+            output.seek(0)
+
+            # Generate the new filename based on the uploaded file name
+            original_filename = uploaded_file.name
+            file_root, file_ext = os.path.splitext(original_filename)
+            edited_filename = f"{file_root}_edited_data{file_ext}"
+            
+            # Provide download button to download updated Excel file with the new file name
+            st.download_button(
+                label="Download Updated Excel File",
+                data=output,
+                file_name=edited_filename,
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
+            st.success("Table saved and download ready!")
+
+
+            # # Save all changes made in the table to the file
+            # with pd.ExcelWriter(uploaded_file.name, engine="openpyxl", mode='a', if_sheet_exists='overlay') as writer:
+            #     edited_data.to_excel(writer, sheet_name=sheet_name, index=False)
+            # st.success("Table saved successfully!")
+            # st.rerun()
     
     with col2:
         if st.button("Add New Row"):
@@ -180,4 +210,3 @@ if uploaded_file:
     st.write(f"CPK (Process Capability Index): {cpk}")
 
     st.success("Predictive model built and predictions displayed successfully!")
-
