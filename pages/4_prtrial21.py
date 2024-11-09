@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import math
+import io
 import os
 
 # App Title
@@ -259,14 +260,51 @@ if uploaded_file:
                 st.session_state.edited_sheets[sheet_name] = st.session_state.df  # Update session state with new row
                 st.rerun()
 
+        # # Save the edited table
+        # with col2:
+        #     if st.button("Save Edited Table"):
+        #         st.session_state.edited_sheets[sheet_name] = edited_data
+
+        #         with pd.ExcelWriter(uploaded_file.name, engine="openpyxl", mode='a', if_sheet_exists='overlay') as writer:
+        #             edited_data.to_excel(writer, sheet_name=sheet_name, index=False)
+        #         st.success("Table saved successfully!")
+        #         st.rerun()
+
+        # Save the edited table
+
         # Save the edited table
         with col2:
             if st.button("Save Edited Table"):
                 st.session_state.edited_sheets[sheet_name] = edited_data
-                with pd.ExcelWriter(uploaded_file.name, engine="openpyxl", mode='a', if_sheet_exists='overlay') as writer:
-                    edited_data.to_excel(writer, sheet_name=sheet_name, index=False)
-                st.success("Table saved successfully!")
-                st.rerun()
+
+                # Use BytesIO to create an in-memory buffer
+                output = io.BytesIO()
+                
+                # Write the edited data to this buffer
+                with pd.ExcelWriter(output, engine="openpyxl") as writer:
+                    # Write each sheet in edited_sheets to the Excel writer
+                    for sheet, df in st.session_state.edited_sheets.items():
+                        df.to_excel(writer, sheet_name=sheet, index=False)
+                    writer.save()
+                
+                # Move the pointer to the beginning of the BytesIO buffer
+                output.seek(0)
+
+                # Generate the new filename based on the uploaded file name
+                original_filename = uploaded_file.name
+                file_root, file_ext = os.path.splitext(original_filename)
+                edited_filename = f"{file_root}_edited_data{file_ext}"
+                
+                # Provide download button to download updated Excel file with the new file name
+                st.download_button(
+                    label="Download Updated Excel File",
+                    data=output,
+                    file_name=edited_filename,
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                )
+                st.success("Table saved and download ready!")
+
+
 
         # Create buttons side by side for removing rows and saving removed rows
         col3, col4 = st.columns([1, 1])
