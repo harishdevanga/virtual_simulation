@@ -4,6 +4,8 @@ import openpyxl
 import os
 from openpyxl.utils import get_column_letter
 from openpyxl.utils.dataframe import dataframe_to_rows
+import os
+import io
 
 # Set the page layout to wide
 st.set_page_config(layout="wide")
@@ -94,39 +96,34 @@ if new_analysis:
                 bottom_cycle_time_input = st.text_input('Bottom Cycle Time', value=bottom_cycle_time, disabled=True)
                 top_cycle_time_input = st.text_input('Top Cycle Time', value=top_cycle_time, disabled=True)
 
-            # Save merged data to 'Output' sheet in the same workbook
-            temp_path = 'D:/python/working_folder/ProcessMap&CTSimulation/xydata.xlsx'
-            with open(temp_path, "wb") as f:
-                f.write(uploaded_file_xydata.getbuffer())
+                    # Create an in-memory Excel file
+            output = io.BytesIO()
+            with pd.ExcelWriter(output, engine="openpyxl") as writer:
+                # Write original 'xydata_version' sheet
+                df2.to_excel(writer, sheet_name='xydata_version', index=False)
 
-            # Open the workbook and work with the 'Output' sheet
-            wb = openpyxl.load_workbook(temp_path)
+                # Write merged 'Output' sheet
+                output_sheet_name = 'Output'
+                for r_idx, row in enumerate(dataframe_to_rows(df3, index=False, header=True), start=1):
+                    for c_idx, value in enumerate(row, start=1):
+                        writer.sheets[output_sheet_name].cell(row=r_idx, column=c_idx, value=value)
 
-            # Check if the 'Output' sheet already exists
-            if 'Output' in wb.sheetnames:
-                output_sheet = wb['Output']
-                # Clear the contents of the existing sheet by specifying a valid range
-                max_col_letter = get_column_letter(output_sheet.max_column)  # Convert column index to letter
-                max_row = output_sheet.max_row
-                for row in output_sheet[f"A1:{max_col_letter}{max_row}"]:
-                    for cell in row:
-                        cell.value = None
-            else:
-                # Create a new sheet named 'Output'
-                output_sheet = wb.create_sheet('Output')
+            # Save the in-memory file for download
+            output.seek(0)
 
-            # Write df3 to 'Output' starting from cell A1
-            for r_idx, row in enumerate(dataframe_to_rows(df3, index=False, header=True), start=1):
-                for c_idx, value in enumerate(row, start=1):
-                    output_sheet.cell(row=r_idx, column=c_idx, value=value)
+            # Generate the new filename based on the uploaded file name
+            original_filename = uploaded_file_xydata.name
+            file_root, file_ext = os.path.splitext(original_filename)
+            edited_filename = f"{file_root}_edited_data{file_ext}"
 
-            # Save the updated workbook
-            wb.save(temp_path)
-            st.success("Data has been successfully saved to the 'Output' sheet in xydata.xlsx.")
-
-            # # Write the merged DataFrame to the sheet
-            # new_sht.range("A1").options(index=False).value = df3
-            # new_sht.range("J1:L1").color = (0, 204, 0)
+            # Provide download button
+            st.download_button(
+                label="Download Updated xydata File",
+                data=output,
+                file_name=edited_filename,
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
+            st.success("Data has been successfully saved to the 'Output' sheet in the updated xydata file.")
 
             # Create an empty DataFrame with the defined columns
             initial_df = pd.DataFrame(columns=['Side', 'Stage', 'Batch Set up Time', 'Process Cycle Time'])
