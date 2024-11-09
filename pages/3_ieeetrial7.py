@@ -144,6 +144,13 @@ if uploaded_file:
             solder_joint_value = st.text_input("No. Solder Joints (N)", value="")
         if test_efficiency:
             try:
+                # Convert the input value to a float
+                solder_joint_value = int(solder_joint_value)
+
+                # Ensure the column for the selected stage is of numeric type
+                if selected_stage in edited_data.columns:
+                    edited_data[selected_stage] = pd.to_numeric(edited_data[selected_stage], errors='coerce')
+
                 # Update existing rows for "No. Solder Joints (N)"
                 solder_joint_value_row_idx = edited_data[edited_data['Data Points'] == "No. Solder Joints (N)"].index
 
@@ -834,7 +841,7 @@ if uploaded_file:
             st.rerun()
 
 
-# Revision History  Date: 19-Oct-2024
+# Revision History  Date: 9-Nov-2024
 # (updated the code for Overall yield_Component & Overall yield_Placement)
 # Pending 2 error worning msg has to be resolved.
 # added a  errors='coerce' to to convert colum to numeric type TypeError: Cannot set non-string value '0.5' into a StringArray.
