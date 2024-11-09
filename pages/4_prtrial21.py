@@ -236,25 +236,6 @@ if uploaded_file:
             except ValueError:
                 st.error("Please enter a valid number for Test Coverage")
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
         # Select the position to add the new row
         row_position_options = ["Above", "Below"]
         selected_row = st.selectbox("Select row to insert new row above or below", edited_data.index)
