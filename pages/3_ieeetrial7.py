@@ -174,6 +174,13 @@ if uploaded_file:
             no_component_value = st.text_input("No. Component", value="")
             if no_component_value:
                 try:
+                    # Convert the input value to a float
+                    no_component_value = int(no_component_value)
+
+                    # Ensure the column for the selected stage is of numeric type
+                    if selected_stage in edited_data.columns:
+                        edited_data[selected_stage] = pd.to_numeric(edited_data[selected_stage], errors='coerce')
+
                     # Update existing rows for "No. Component"
                     no_component_row_idx = edited_data[edited_data['Data Points'] == "No. Component"].index
 
@@ -201,6 +208,13 @@ if uploaded_file:
             no_placement_value = st.text_input("No. Placement", value="")
             if no_placement_value:
                 try:
+                   # Convert the input value to a float
+                    no_placement_value = int(no_placement_value)
+
+                    # Ensure the column for the selected stage is of numeric type
+                    if selected_stage in edited_data.columns:
+                        edited_data[selected_stage] = pd.to_numeric(edited_data[selected_stage], errors='coerce')
+
                     # Update existing rows for "No. Placement"
                     no_placement_row_idx = edited_data[edited_data['Data Points'] == "No. Placement"].index
 
