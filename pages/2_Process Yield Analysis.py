@@ -210,3 +210,6 @@ if uploaded_file:
     st.write(f"CPK (Process Capability Index): {cpk}")
 
     st.success("Predictive model built and predictions displayed successfully!")
+
+# revision history 10-Nov-24
+# recent code ==> pytria32.py
