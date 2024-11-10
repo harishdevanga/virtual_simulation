@@ -888,3 +888,4 @@ if uploaded_file:
 # Pending 2 error worning msg has to be resolved.
 # added a  errors='coerce' to to convert colum to numeric type TypeError: Cannot set non-string value '0.5' into a StringArray.
 # add file download method to deploy in streamlit cloud
+# recent code = ieeetrial7.py
