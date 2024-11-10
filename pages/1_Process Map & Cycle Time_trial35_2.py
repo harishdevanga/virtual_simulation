@@ -401,12 +401,32 @@ if existing_analysis:
                 if st.button("Save Edited Table"):
                     # Save the edited data in the session state
                     st.session_state.edited_sheets[sheet_name] = edited_data
+
+                    # Use BytesIO to create an in-memory buffer
+                    output = io.BytesIO()
                     
-                    # Save all changes made in the table to the file
-                    with pd.ExcelWriter(uploaded_file.name, engine="openpyxl", mode='a', if_sheet_exists='overlay') as writer:
-                        edited_data.to_excel(writer, sheet_name=sheet_name, index=False)
-                    st.success("Table saved successfully!")
-                    st.rerun()
+                    # Write the edited data to this buffer
+                    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+                        # Write each sheet in edited_sheets to the Excel writer
+                        for sheet, df in st.session_state.edited_sheets.items():
+                            df.to_excel(writer, sheet_name=sheet, index=False)
+                    
+                    # Move the pointer to the beginning of the BytesIO buffer
+                    output.seek(0)
+
+                    # Generate the new filename based on the uploaded file name
+                    original_filename = uploaded_file.name
+                    file_root, file_ext = os.path.splitext(original_filename)
+                    edited_filename = f"{file_root}_edited_data{file_ext}"
+                    
+                    # Provide download button to download updated Excel file with the new file name
+                    st.download_button(
+                        label="Download Updated Excel File",
+                        data=output,
+                        file_name=edited_filename,
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    )
+                    st.success("Table saved and download ready!")
             
             with col2:
                 if st.button("Add New Row"):
@@ -433,16 +453,34 @@ if existing_analysis:
             with col4:
                 if st.button("Save Removed Rows"):
                     if 'removed_rows' in st.session_state and not st.session_state.removed_rows.empty:
-                        # Load the entire Excel file into a dictionary of DataFrames
-                        excel_file = pd.read_excel(uploaded_file.name, sheet_name=None)
-                        # Access the specific sheet and update it
+                        # Use BytesIO to create an in-memory buffer
+                        output = io.BytesIO()
+
+                        # Create a dictionary of the Excel file with updated data in `st.session_state.df`
+                        excel_file = pd.read_excel(uploaded_file, sheet_name=None)
                         excel_file[sheet_name] = st.session_state.df
-                        # Save all sheets back to the Excel file
-                        with pd.ExcelWriter(uploaded_file.name, engine="openpyxl", mode="w") as writer:
+
+                        # Write all sheets to this in-memory buffer
+                        with pd.ExcelWriter(output, engine="openpyxl") as writer:
                             for sheet_name, sheet_data in excel_file.items():
                                 sheet_data.to_excel(writer, sheet_name=sheet_name, index=False)
-                        st.success("Removed rows saved successfully!")
-                        st.rerun()
+
+                        # Move the pointer to the beginning of the BytesIO buffer
+                        output.seek(0)
+
+                        # Generate the new filename based on the uploaded file name
+                        original_filename = uploaded_file.name
+                        file_root, file_ext = os.path.splitext(original_filename)
+                        removed_rows_filename = f"{file_root}_removed_rows{file_ext}"
+
+                        # Provide download button to download updated Excel file with the new file name
+                        st.download_button(
+                            label="Download Excel File with Removed Rows",
+                            data=output,
+                            file_name=removed_rows_filename,
+                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                        )
+                        st.success("Removed rows saved and download ready!")
             
 # revision history 10-Oct-24
 # Added optoin to tempfile instead of os directory to handle cloud deployment in new_analysis
