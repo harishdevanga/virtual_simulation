@@ -6,6 +6,9 @@ from openpyxl.utils import get_column_letter
 from openpyxl.utils.dataframe import dataframe_to_rows
 import os
 import io
+import tempfile
+import numpy as np
+
 
 # Set the page layout to wide
 st.set_page_config(layout="wide")
@@ -219,41 +222,27 @@ if new_analysis:
             # Provide inputs for file name, sheet name, and path
             st.markdown("### Save Data to Excel")
 
+            # file_name = st.text_input("Enter the Excel file name (with .xlsx extension):")
+            # sheet_name = st.text_input("Enter the sheet name:")
+            # save_path = st.text_input("Enter the path to save the Excel file:")
+
+            # Provide inputs for file name and sheet name only (without path)
             file_name = st.text_input("Enter the Excel file name (with .xlsx extension):")
             sheet_name = st.text_input("Enter the sheet name:")
-            save_path = st.text_input("Enter the path to save the Excel file:")
 
             # Add a button to save the entire DataFrame
             if st.button("Save DataFrame to Excel"):
-                full_path = os.path.join(save_path, file_name)
+                # full_path = os.path.join(save_path, file_name)
+                # Use a temporary directory to save the file
+                with tempfile.TemporaryDirectory() as tmpdirname:
+                    full_path = os.path.join(tmpdirname, file_name)
 
-                # Check if the file and sheet already exist
-                if os.path.exists(full_path):
-                    with pd.ExcelWriter(full_path, engine='openpyxl', mode='a') as writer:
-                        if sheet_name in writer.sheets:
-                            st.error(f"The sheet '{sheet_name}' already exists in the file '{file_name}'. Please choose a different sheet name.")
-                        else:
-                            # Prepare the DataFrame for saving
-                            final_df = st.session_state['filtered_data'].copy()
-                            
-                            # Add the additional fields in the first row, without overwriting existing data
-                            for col, value in zip(
-                                ['Max Overall PCBA CT', 'Shift Hr/day', 'Days/Week', 'Weeks/Year', 'Hr/Year (1 Shift)', 
-                                'Overall Labor Efficiency', 'Total Batch Setup Time, sec', 'Total Cycle Time, sec', 
-                                'Bottom Cycle Time', 'Top Cycle Time', 'Solder Joints', 'Component Count'],
-                                [total_cycle_time_calc, shift_hr_day, days_week, weeks_year, hr_year_shift, overall_labor_efficiency, 
-                                total_batch_setup_time, total_cycle_time_calc, bottom_cycle_time, top_cycle_time, solder_joints_input, 
-                                component_count]):
-                                final_df.at[0, col] = value
-
-                            final_df.to_excel(writer, sheet_name=sheet_name, index=False)
-                            st.success(f"DataFrame saved successfully to {sheet_name} in {file_name}.")
-                else:
+                    # Write data to Excel file
                     with pd.ExcelWriter(full_path, engine='openpyxl') as writer:
                         # Prepare the DataFrame for saving
                         final_df = st.session_state['filtered_data'].copy()
                         
-                        # Add the additional fields in the first row, without overwriting existing data
+                        # Add the additional fields in the first row
                         for col, value in zip(
                             ['Max Overall PCBA CT', 'Shift Hr/day', 'Days/Week', 'Weeks/Year', 'Hr/Year (1 Shift)', 
                             'Overall Labor Efficiency', 'Total Batch Setup Time, sec', 'Total Cycle Time, sec', 
@@ -264,8 +253,16 @@ if new_analysis:
                             final_df.at[0, col] = value
 
                         final_df.to_excel(writer, sheet_name=sheet_name, index=False)
-                        st.success(f"DataFrame saved successfully to {sheet_name} in {file_name}.")
-
+                    
+                    # Load the saved file and create a download link
+                    with open(full_path, "rb") as f:
+                        st.download_button(
+                            label="Download Excel file",
+                            data=f,
+                            file_name=file_name,
+                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                        )
+                        
             # Add select box and delete button for deleting rows
             if not st.session_state['filtered_data'].empty:
                 with delete_col3:
@@ -315,3 +312,138 @@ if new_analysis:
                                 st.success(f"Updated DataFrame saved to {sheet_name} in {file_name}.")
 
                         st.experimental_rerun()
+
+##############################################################################################################################################
+##############################################################################################################################################
+##############################################################################################################################################
+##############################################################################################################################################
+##############################################################################################################################################
+##############################################################################################################################################
+
+if existing_analysis:
+        st.subheader("Existing Analysis")
+
+        # File uploader for Excel/CSV/XLSM files
+        uploaded_file = st.file_uploader("Choose an Excel/CSV/XLSM file", type=["xlsx", "csv", "xlsm"])
+
+        if uploaded_file:
+            # Load data from the uploaded file
+            @st.cache_data
+            def load_data(file):
+                if file.name.endswith('.csv'):
+                    df = pd.read_csv(file)
+                else:
+                    df = pd.read_excel(file, sheet_name=None)
+                return df
+
+            data = load_data(uploaded_file)
+
+            # Initialize session state to store edited data for each sheet
+            if 'edited_sheets' not in st.session_state:
+                st.session_state.edited_sheets = {}
+
+            # Assuming 'data' is a dictionary of DataFrames loaded from an Excel file
+            if isinstance(data, dict):
+                sheet_name = st.selectbox("Select the sheet", data.keys())
+                
+                # Check if the sheet has been edited before; if so, load the edited version
+                if sheet_name in st.session_state.edited_sheets:
+                    st.session_state.df = st.session_state.edited_sheets[sheet_name]
+                else:
+                    selected_data = data[sheet_name]
+                    st.session_state.df = pd.DataFrame(selected_data)  # Load original data from file
+                
+            # Extract the required values
+            shift_hr_day = st.session_state.df.at[0, 'Shift Hr/day']
+            days_week = st.session_state.df.at[0, 'Days/Week']
+            weeks_year = st.session_state.df.at[0, 'Weeks/Year']
+            hr_year_shift = st.session_state.df.at[0, 'Hr/Year (1 Shift)']
+            overall_labor_efficiency = st.session_state.df.at[0, 'Overall Labor Efficiency']
+            total_batch_setup_time = st.session_state.df.at[0, 'Total Batch Setup Time, sec']
+            total_cycle_time = st.session_state.df.at[0, 'Total Cycle Time, sec']
+            bottom_cycle_time = st.session_state.df.at[0, 'Bottom Cycle Time']
+            top_cycle_time = st.session_state.df.at[0, 'Top Cycle Time']
+            solder_joints = st.session_state.df.at[0, 'Solder Joints']
+            component_count = st.session_state.df.at[0, 'Component Count']
+            
+            # Hide the dataframe
+            st.write("")
+
+            # Create text inputs for each value
+            col1, col2, col3 = st.columns(3)
+
+            with col1:
+                shift_hr_day_input = st.text_input('Shift Hr/day', value=shift_hr_day, disabled=True)
+                weeks_year_input = st.text_input('Weeks/Year', value=weeks_year, disabled=True)
+                overall_labor_efficiency_input = st.text_input('Overall Labor Efficiency', value=overall_labor_efficiency, disabled=True)
+                solder_joints_input = st.text_input('Solder Joints', value=solder_joints, disabled=True)
+
+            with col2:
+                days_week_input = st.text_input('Days/Week', value=days_week, disabled=True)
+                hr_year_shift_input = st.text_input('Hr/Year (1 Shift)', value=hr_year_shift, disabled=True)
+                total_batch_setup_time_input = st.text_input('Total Batch Setup Time, sec', value=total_batch_setup_time, disabled=True)
+                component_count_input = st.text_input('Component Count', value=component_count, disabled=True)
+
+            with col3:
+                total_cycle_time_input = st.text_input('Total Cycle Time, sec', value=total_cycle_time, disabled=True)
+                bottom_cycle_time_input = st.text_input('Bottom Cycle Time', bottom_cycle_time, disabled=True)
+                top_cycle_time_input = st.text_input('Top Cycle Time', value=top_cycle_time, disabled=True)
+            
+            # Display data in a table
+            st.subheader("Data Table")
+            edited_data = st.data_editor(st.session_state.df)
+        
+            # Create buttons side by side for adding new rows and saving the table
+            col1, col2 = st.columns([1, 1])
+
+            # Create a separate save button for general edits in the table
+            with col1:
+                if st.button("Save Edited Table"):
+                    # Save the edited data in the session state
+                    st.session_state.edited_sheets[sheet_name] = edited_data
+                    
+                    # Save all changes made in the table to the file
+                    with pd.ExcelWriter(uploaded_file.name, engine="openpyxl", mode='a', if_sheet_exists='overlay') as writer:
+                        edited_data.to_excel(writer, sheet_name=sheet_name, index=False)
+                    st.success("Table saved successfully!")
+                    st.rerun()
+            
+            with col2:
+                if st.button("Add New Row"):
+                    # Create a new row with NaN values
+                    new_row = pd.DataFrame({col: [np.nan] for col in edited_data.columns})
+                    # Append the new row to the DataFrame
+                    st.session_state.df = pd.concat([st.session_state.df, new_row], ignore_index=True)
+                    st.session_state.edited_sheets[sheet_name] = st.session_state.df  # Update session state with new row
+                    st.rerun()  # Rerun the app to update the data editor with the new row
+
+            # Create buttons side by side for removing rows and saving removed rows
+            col3, col4 = st.columns([1, 1])
+
+            with col3:
+                row_to_delete = st.selectbox("Select row to delete", st.session_state.df.index)
+                if st.button("Remove Row"):
+                    if 'removed_rows' not in st.session_state:
+                        st.session_state.removed_rows = pd.DataFrame()
+                    st.session_state.removed_rows = pd.concat([st.session_state.removed_rows, st.session_state.df.loc[[row_to_delete]]])
+                    st.session_state.df = st.session_state.df.drop(row_to_delete).reset_index(drop=True)
+                    st.session_state.edited_sheets[sheet_name] = st.session_state.df  # Update session state with removed row
+                    st.rerun()
+
+            with col4:
+                if st.button("Save Removed Rows"):
+                    if 'removed_rows' in st.session_state and not st.session_state.removed_rows.empty:
+                        # Load the entire Excel file into a dictionary of DataFrames
+                        excel_file = pd.read_excel(uploaded_file.name, sheet_name=None)
+                        # Access the specific sheet and update it
+                        excel_file[sheet_name] = st.session_state.df
+                        # Save all sheets back to the Excel file
+                        with pd.ExcelWriter(uploaded_file.name, engine="openpyxl", mode="w") as writer:
+                            for sheet_name, sheet_data in excel_file.items():
+                                sheet_data.to_excel(writer, sheet_name=sheet_name, index=False)
+                        st.success("Removed rows saved successfully!")
+                        st.rerun()
+            
+# revision history 10-Oct-24
+# Added optoin to tempfile instead of os directory to handle cloud deployment in new_analysis
+# existing_analysis is added along with new_analysis
