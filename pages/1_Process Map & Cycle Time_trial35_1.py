@@ -102,6 +102,10 @@ if new_analysis:
                 # Write original 'xydata_version' sheet
                 df2.to_excel(writer, sheet_name='xydata_version', index=False)
 
+                # Create the 'Output' sheet explicitly
+                writer.book.create_sheet(title="Output")
+                output_sheet = writer.sheets["Output"]
+                
                 # Write merged 'Output' sheet
                 output_sheet_name = 'Output'
                 for r_idx, row in enumerate(dataframe_to_rows(df3, index=False, header=True), start=1):
