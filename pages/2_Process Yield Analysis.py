@@ -114,16 +114,34 @@ if uploaded_file:
     with col4:
         if st.button("Save Removed Rows"):
             if 'removed_rows' in st.session_state and not st.session_state.removed_rows.empty:
-                # Load the entire Excel file into a dictionary of DataFrames
-                excel_file = pd.read_excel(uploaded_file.name, sheet_name=None)
-                # Access the specific sheet and update it
+                # Use BytesIO to create an in-memory buffer
+                output = io.BytesIO()
+
+                # Create a dictionary of the Excel file with updated data in `st.session_state.df`
+                excel_file = pd.read_excel(uploaded_file, sheet_name=None)
                 excel_file[sheet_name] = st.session_state.df
-                # Save all sheets back to the Excel file
-                with pd.ExcelWriter(uploaded_file.name, engine="openpyxl", mode="w") as writer:
+
+                # Write all sheets to this in-memory buffer
+                with pd.ExcelWriter(output, engine="openpyxl") as writer:
                     for sheet_name, sheet_data in excel_file.items():
                         sheet_data.to_excel(writer, sheet_name=sheet_name, index=False)
-                st.success("Removed rows saved successfully!")
-                st.rerun()
+
+                # Move the pointer to the beginning of the BytesIO buffer
+                output.seek(0)
+
+                # Generate the new filename based on the uploaded file name
+                original_filename = uploaded_file.name
+                file_root, file_ext = os.path.splitext(original_filename)
+                removed_rows_filename = f"{file_root}_removed_rows{file_ext}"
+
+                # Provide download button to download updated Excel file with the new file name
+                st.download_button(
+                    label="Download Excel File with Removed Rows",
+                    data=output,
+                    file_name=removed_rows_filename,
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                )
+                st.success("Removed rows saved and download ready!")
 
     # OCC Ranking Table
     OCC_Ranking_Table = {
@@ -212,4 +230,4 @@ if uploaded_file:
     st.success("Predictive model built and predictions displayed successfully!")
 
 # revision history 10-Nov-24
-# recent code ==> pytria32.py
+# recent code ==> pytria32_1.py
