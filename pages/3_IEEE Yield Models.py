@@ -930,7 +930,7 @@ if uploaded_file:
             fig.update_layout(xaxis_title="Solder Defect Rate Scaling", yaxis_title="Assembly Test Yield (%)")
 
             # Streamlit app interface
-            st.title("Yield vs. Solder Defects Analysis")
+            st.subheader("Yield vs. Solder Defects Analysis")
             st.write("This is to analyze and visualize the effect of solder defects on assembly yield for different board versions.")
             st.plotly_chart(fig)
 
@@ -991,7 +991,7 @@ if uploaded_file:
                 fig.update_layout(xaxis_title="Solder Defect Rate Scaling", yaxis_title="Assembly Test Yield (%)")
 
                 # Streamlit app interface
-                st.title("Yield vs. Solder Defects Analysis with Clustering Effect (Alpha)")
+                st.subheader("Yield vs. Solder Defects Analysis with Clustering Effect (Alpha)")
                 st.write("This app allows you to adjust the clustering sensitivity (alpha) and observe its effect on yield.")
                 st.plotly_chart(fig)
 
