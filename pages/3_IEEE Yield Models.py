@@ -3,6 +3,8 @@ import pandas as pd
 import numpy as np
 import io
 import os
+import plotly.express as px
+
 
 # App Title
 st.set_page_config(page_title="IEEE Yield Analysis!!!", page_icon=":bar_chart:", layout="wide")
@@ -102,7 +104,7 @@ if uploaded_file:
 
         # 1. Provide an option to select the product development stage
         with col6:            
-            stages = ['MK0', 'MK1', 'MK2', 'MK3', 'X1']  # Add more stages if needed
+            stages = ['MK0', 'MK1', 'MK2', 'MK3', 'X1', 'X1.1', 'X1.2','SOP' ]  # Add more stages if needed
             selected_stage = st.selectbox("Select the product development stage", stages)
 
 
@@ -839,7 +841,7 @@ if uploaded_file:
 
 
     # Third row: col11 to col14 under col5 to col10
-    col13, col15, col16 = st.columns([1, 1, 1])
+    col13, = st.columns(1)
 
 
 
@@ -877,10 +879,127 @@ if uploaded_file:
             st.success("Table saved and download ready!")
 
 
-            # with pd.ExcelWriter(uploaded_file.name, engine="openpyxl", mode='a', if_sheet_exists='overlay') as writer:
-            #     edited_data.to_excel(writer, sheet_name=sheet_name, index=False)
-            # st.success("Table saved successfully!")
-            # st.rerun()
+###############################################################################
+###############################################################################
+###############################################################################
+###############################################################################
+###############################################################################
+
+        col_graph1,col_graph2 = st.columns(2)
+
+        with col_graph1: 
+            # Extracting the columns (board names)
+            board_names = [col for col in edited_data.columns if col != "Data Points"]
+
+            # Extract solder joint counts dynamically based on the edited_data
+            solder_joint_row = edited_data.loc[edited_data["Data Points"] == "No. Solder Joints (N)"].squeeze()
+            solder_joints = {board: solder_joint_row[board] for board in board_names}
+
+            # Defect rate scaling values (logarithmic range for better visualization)
+            defect_rate_scaling = np.logspace(-1, 2, 50)  # From 0.1 to 100 in logarithmic scale
+
+            # Define function to calculate yield based on defect rate scaling
+            def calculate_yield(solder_joints, defect_rate_scaling, defect_rate_per_joint):
+                overall_defect_rate = defect_rate_scaling * defect_rate_per_joint
+                yield_percentage = 100 * np.exp(-overall_defect_rate * solder_joints)
+                return yield_percentage
+
+            # Get defect rate per joint from the edited_data DataFrame
+            defect_rate_per_joint_row = edited_data.loc[edited_data["Data Points"] == "Defect Rate per Solder Joint (DR)"].squeeze()
+            defect_rates = {board: defect_rate_per_joint_row[board] for board in board_names}
+
+            # Calculate yields for each board
+            yield_data = []
+            for board in board_names:
+                yield_percentage = calculate_yield(solder_joints[board], defect_rate_scaling, defect_rates[board])
+                yield_data.append(pd.DataFrame({
+                    "Defect Rate Scaling": defect_rate_scaling,
+                    "Yield (%)": yield_percentage,
+                    "Board": board
+                }))
+
+            # Concatenate all yield data into a single DataFrame
+            df = pd.concat(yield_data, ignore_index=True)
+
+            # Plotting the yield vs defect rate scaling
+            fig = px.line(
+                df, x="Defect Rate Scaling", y="Yield (%)", color="Board",
+                log_x=True,  # Log scale for defect rate scaling
+                title="Assembly Test Yield vs. Solder Defect Rate Scaling"
+            )
+            fig.update_layout(xaxis_title="Solder Defect Rate Scaling", yaxis_title="Assembly Test Yield (%)")
+
+            # Streamlit app interface
+            st.title("Yield vs. Solder Defects Analysis")
+            st.write("This is to analyze and visualize the effect of solder defects on assembly yield for different board versions.")
+            st.plotly_chart(fig)
+
+            st.write("""
+            ### Analysis Interpretation
+            The chart above shows the yield decreasing with an increase in the solder defect rate scaling. 
+            This reflects the impact of solder defects on assembly yield, as each board has a different 
+            number of solder joints, making it more or less sensitive to solder defects.
+            """)
+
+        with col_graph2:
+            # Ensure the column for the selected stage is of numeric type
+            if selected_stage in edited_data.columns:
+                # Extracting the columns (board names)
+                board_names = [col for col in edited_data.columns if col != "Data Points"]
+
+                # Extract solder joint counts dynamically based on the edited_data
+                solder_joint_row = edited_data.loc[edited_data["Data Points"] == "No. Solder Joints (N)"].squeeze()
+                solder_joints = {board: solder_joint_row[board] for board in board_names}
+
+                # Defect rate scaling values (logarithmic range for better visualization)
+                defect_rate_scaling = np.logspace(-1, 2, 10)  # From 0.1 to 100 in logarithmic scale
+                
+                # Allow user to input alpha values
+                st.sidebar.write("### Set Alpha Values")
+                alpha_1 = st.sidebar.number_input("Alpha = 1.0", min_value=0.1, max_value=5.0, value=1.0, step=0.05)
+                alpha_2 = st.sidebar.number_input("Alpha = 0.45", min_value=0.1, max_value=5.0, value=0.45, step=0.05)
+                alpha_3 = st.sidebar.number_input("Alpha = 0.2", min_value=0.1, max_value=5.0, value=0.2, step=0.05)
+
+                # Get defect rate per joint from the edited_data DataFrame for the selected stage
+                defect_rate_per_joint = defect_rate_per_joint_row[selected_stage]
+
+                # Define function to calculate yield based on defect rate scaling and alpha
+                def calculate_yield(solder_joints, defect_rate_scaling, defect_rate_per_joint, alpha):
+                    overall_defect_rate = defect_rate_scaling * defect_rate_per_joint
+                    yield_percentage = 100 * np.exp(-alpha * overall_defect_rate * solder_joints)
+                    return yield_percentage
+
+                # Calculate yields for each alpha value for a specific board, say "MK1"
+                yield_data = []
+                for alpha_value, alpha_label in zip([alpha_1, alpha_2, alpha_3], ["1.0", "0.45", "0.2"]):
+                    board = selected_stage  # Example board, replace or make dynamic if needed
+                    yield_percentage = calculate_yield(solder_joints[board], defect_rate_scaling, defect_rates[board], alpha_value)
+                    yield_data.append(pd.DataFrame({
+                        "Defect Rate Scaling": defect_rate_scaling,
+                        "Yield (%)": yield_percentage,
+                        "Alpha": f"alpha = {alpha_label}"
+                    }))
+
+                # Concatenate all yield data into a single DataFrame
+                df = pd.concat(yield_data, ignore_index=True)
+
+                # Plotting the yield vs defect rate scaling
+                fig = px.line(
+                    df, x="Defect Rate Scaling", y="Yield (%)", color="Alpha",
+                    title="Assembly Test Yield vs. Solder Defect Rate Scaling with Alpha Values"
+                )
+                fig.update_layout(xaxis_title="Solder Defect Rate Scaling", yaxis_title="Assembly Test Yield (%)")
+
+                # Streamlit app interface
+                st.title("Yield vs. Solder Defects Analysis with Clustering Effect (Alpha)")
+                st.write("This app allows you to adjust the clustering sensitivity (alpha) and observe its effect on yield.")
+                st.plotly_chart(fig)
+
+                st.write("""
+                ### Analysis Interpretation
+                Adjusting the alpha value affects the clustering sensitivity, which in turn impacts the yield as defect rates increase.
+                Lower alpha values show a steeper drop in yield, indicating higher sensitivity to defect clustering.
+                """)
 
 
 # Revision History  Date: 9-Nov-2024
@@ -888,4 +1007,4 @@ if uploaded_file:
 # Pending 2 error worning msg has to be resolved.
 # added a  errors='coerce' to to convert colum to numeric type TypeError: Cannot set non-string value '0.5' into a StringArray.
 # add file download method to deploy in streamlit cloud
-# recent code = ieeetrial7.py
+# recent code = ieeetrial8.py
