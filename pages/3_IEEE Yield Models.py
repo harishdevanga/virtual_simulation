@@ -1113,8 +1113,7 @@ if uploaded_file:
 
             st.write("""
             ### Cost vs. Solder Defects Analysis - Interpretation
-            The cost of testing and repairing boards increases exponentially as the defect rate rises.
-            Boards with higher numbers of solder joints exhibit greater sensitivity to defect scaling.
+            The cost of testing and repairing boards increases exponentially as the defect rate rises. Boards with higher numbers of solder joints exhibit greater sensitivity to defect scaling.
             """)
 
         with col_graph3_3:
