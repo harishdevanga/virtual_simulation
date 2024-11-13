@@ -885,8 +885,11 @@ if uploaded_file:
 ###############################################################################
 ###############################################################################
 
-        col_graph1,col_graph2 = st.columns(2)
+        # Streamlit app interface
+        st.subheader("Yield vs. Solder Defects Analysis")
+        st.write("This is to analyze and visualize the effect of solder defects on assembly yield for different board versions.")
 
+        col_graph1,col_graph1_1= st.columns(2)
         with col_graph1: 
             # Extracting the columns (board names)
             board_names = [col for col in edited_data.columns if col != "Data Points"]
@@ -931,8 +934,8 @@ if uploaded_file:
 
 
             # Streamlit app interface
-            st.subheader("Yield vs. Solder Defects Analysis")
-            st.write("This is to analyze and visualize the effect of solder defects on assembly yield for different board versions.")
+            # st.subheader("Yield vs. Solder Defects Analysis")
+            # st.write("This is to analyze and visualize the effect of solder defects on assembly yield for different board versions.")
             st.plotly_chart(fig)
 
             # Filter the DataFrame to focus on scaling factors <= 10
@@ -944,24 +947,30 @@ if uploaded_file:
                 x="Defect Rate Scaling",
                 y="Yield (%)",
                 color="Board",  # Differentiates lines by board
-                title="Assembly Test Yield vs. Solder Defect Rate Scaling (Detail View)",
+                title="Yield vs. Solder Defect Rate Scaling (Detail View)",
                 labels={
                     "Solder Def Rate Scaling": "Solder Def Rate Scaling (<= 10)",
                     "Yield (%) Change": "Yield (%) Change (%)"
                 },
                 template="plotly_white"
             )
-
+        with col_graph1_1:
             # Display the chart in the second column
             st.plotly_chart(fig2, use_container_width=True)
 
-            st.write("""
-            ### Analysis Interpretation
-            The chart above shows the yield decreasing with an increase in the solder defect rate scaling. 
-            This reflects the impact of solder defects on assembly yield, as each board has a different 
-            number of solder joints, making it more or less sensitive to solder defects.
-            """)
+        st.write("""
+        ### Yield vs. Solder Defects Analysis - Interpretation
+        The chart above shows the yield decreasing with an increase in the solder defect rate scaling. 
+        This reflects the impact of solder defects on assembly yield, as each board has a different 
+        number of solder joints, making it more or less sensitive to solder defects.
+        """)
 
+
+        # Streamlit app interface
+        st.subheader("Yield vs. Solder Defects Analysis with Clustering Effect (Alpha)")
+        st.write("This app allows you to adjust the clustering sensitivity (alpha) and observe its effect on yield.")
+
+        col_graph2,col_graph2_2= st.columns(2)
         with col_graph2:
             # Ensure the column for the selected stage is of numeric type
             if selected_stage in edited_data.columns:
@@ -1010,20 +1019,18 @@ if uploaded_file:
                     title="Assembly Test Yield vs. Solder Defect Rate Scaling with Alpha Values"
                 )
                 fig.update_layout(xaxis_title="Solder Defect Rate Scaling", yaxis_title="Assembly Test Yield (%)")
-
-                # Streamlit app interface
-                st.subheader("Yield vs. Solder Defects Analysis with Clustering Effect (Alpha)")
-                st.write("This app allows you to adjust the clustering sensitivity (alpha) and observe its effect on yield.")
                 st.plotly_chart(fig)
 
                 st.write("""
-                ### Analysis Interpretation
+                ### Yield vs. Solder Defects Analysis with Clustering Effect (Alpha) - Interpretation 
                 Adjusting the alpha value affects the clustering sensitivity, which in turn impacts the yield as defect rates increase.
                 Lower alpha values show a steeper drop in yield, indicating higher sensitivity to defect clustering.
                 """)
 
-
-        col_graph3, col_graph4 = st.columns(2)
+        st.subheader("Cost vs. Solder Defects Analysis")
+        st.write("This app allows you to observe the cost increase with solder defect rate scaling for different boards.")
+            
+        col_graph3, col_graph3_3 = st.columns(2)
 
         with col_graph3:
             # Extracting the columns (board names)
@@ -1069,18 +1076,16 @@ if uploaded_file:
                 log_x=True
             )
 
-            st.subheader("Cost vs. Solder Defects Analysis")
-            st.write("This app allows you to observe the cost increase with solder defect rate scaling for different boards.")
             st.plotly_chart(fig1, use_container_width=True)
 
 
             st.write("""
-            ### Analysis Interpretation
+            ### Cost vs. Solder Defects Analysis - Interpretation
             The cost of testing and repairing boards increases exponentially as the defect rate rises.
             Boards with higher numbers of solder joints exhibit greater sensitivity to defect scaling.
             """)
 
-        with col_graph4:
+        with col_graph3_3:
             # Filter the DataFrame to focus on scaling factors <= 10
             detail_df = plot_df[plot_df["Solder Def Rate Scaling"] <= 10]
 
