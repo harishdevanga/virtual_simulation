@@ -884,6 +884,7 @@ if uploaded_file:
 ###############################################################################
 ###############################################################################
 ###############################################################################
+        st.write("-----------------------------------")
 
         # Streamlit app interface
         st.subheader("Yield vs. Solder Defects Analysis")
@@ -970,6 +971,8 @@ if uploaded_file:
         st.subheader("Assembly Test Yield vs. Solder Defects Analysis with Clustering Effect (Alpha)")
         st.write("This app allows you to adjust the clustering sensitivity (alpha) and observe its effect on yield.")
 
+        st.write("-----------------------------------")
+
         col_graph2,col_graph2_2= st.columns(2)
         with col_graph2:
             # Ensure the column for the selected stage is of numeric type
@@ -1055,7 +1058,7 @@ if uploaded_file:
         Adjusting the alpha value affects the clustering sensitivity, which in turn impacts the yield as defect rates increase.
         Lower alpha values show a steeper drop in yield, indicating higher sensitivity to defect clustering.
         """)
-
+        st.write("-----------------------------------")
         st.subheader("Cost vs. Solder Defects Analysis")
         st.write("This app allows you to observe the cost increase with solder defect rate scaling for different boards.")
             
