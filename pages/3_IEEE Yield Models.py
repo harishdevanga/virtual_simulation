@@ -1111,11 +1111,6 @@ if uploaded_file:
             st.plotly_chart(fig1, use_container_width=True)
 
 
-            st.write("""
-            ### Cost vs. Solder Defects Analysis - Interpretation
-            The cost of testing and repairing boards increases exponentially as the defect rate rises. Boards with higher numbers of solder joints exhibit greater sensitivity to defect scaling.
-            """)
-
         with col_graph3_3:
             # Filter the DataFrame to focus on scaling factors <= 10
             detail_df = plot_df[plot_df["Solder Def Rate Scaling"] <= 10]
@@ -1136,6 +1131,13 @@ if uploaded_file:
 
             # Display the chart in the second column
             st.plotly_chart(fig2, use_container_width=True)
+
+
+        st.write("""
+        ### Cost vs. Solder Defects Analysis - Interpretation
+        The cost of testing and repairing boards increases exponentially as the defect rate rises. Boards with higher numbers of solder joints exhibit greater sensitivity to defect scaling.
+        """)
+
 
 # Revision History  Date: 9-Nov-2024
 # (updated the code for Overall yield_Component & Overall yield_Placement)
