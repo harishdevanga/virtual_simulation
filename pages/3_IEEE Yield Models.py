@@ -928,9 +928,9 @@ if uploaded_file:
             fig = px.line(
                 df, x="Defect Rate Scaling", y="Yield (%)", color="Board",
                 log_x=True,  # Log scale for defect rate scaling
-                title="Assembly Test Yield vs. Solder Defect Rate Scaling"
+                title="Yield vs. Solder Defect Rate Scaling"
             )
-            fig.update_layout(xaxis_title="Solder Defect Rate Scaling", yaxis_title="Assembly Test Yield (%)")
+            fig.update_layout(xaxis_title="Solder Defect Rate Scaling", yaxis_title="Yield (%)")
 
 
             # Streamlit app interface
@@ -949,7 +949,7 @@ if uploaded_file:
                 color="Board",  # Differentiates lines by board
                 title="Yield vs. Solder Defect Rate Scaling (Detail View)",
                 labels={
-                    "Solder Def Rate Scaling": "Solder Def Rate Scaling (<= 10)",
+                    "Defect Rate Scaling": "Solder Defect Rate Scaling (<= 10)",
                     "Yield (%) Change": "Yield (%) Change (%)"
                 },
                 template="plotly_white"
@@ -967,7 +967,7 @@ if uploaded_file:
 
 
         # Streamlit app interface
-        st.subheader("Yield vs. Solder Defects Analysis with Clustering Effect (Alpha)")
+        st.subheader("Assembly Test Yield vs. Solder Defects Analysis with Clustering Effect (Alpha)")
         st.write("This app allows you to adjust the clustering sensitivity (alpha) and observe its effect on yield.")
 
         col_graph2,col_graph2_2= st.columns(2)
@@ -1014,18 +1014,47 @@ if uploaded_file:
                 df = pd.concat(yield_data, ignore_index=True)
 
                 # Plotting the yield vs defect rate scaling
-                fig = px.line(
+                fig1 = px.line(
                     df, x="Defect Rate Scaling", y="Yield (%)", color="Alpha",
-                    title="Assembly Test Yield vs. Solder Defect Rate Scaling with Alpha Values"
+                    title="Assembly Test Yield vs. Solder Defect Rate Scaling with Alpha Values",
+                
+                labels={
+                    "Defect Rate Scaling": "Solder Defect Rate Scaling",
+                    "Yield (%)": "Assembly Test Yield (%)"
+                },
+                template="plotly_white"
                 )
-                fig.update_layout(xaxis_title="Solder Defect Rate Scaling", yaxis_title="Assembly Test Yield (%)")
-                st.plotly_chart(fig)
+                # fig.update_layout(xaxis_title="Solder Defect Rate Scaling", yaxis_title="Assembly Test Yield (%)")
+                st.plotly_chart(fig1, use_container_width=True)
 
-                st.write("""
-                ### Yield vs. Solder Defects Analysis with Clustering Effect (Alpha) - Interpretation 
-                Adjusting the alpha value affects the clustering sensitivity, which in turn impacts the yield as defect rates increase.
-                Lower alpha values show a steeper drop in yield, indicating higher sensitivity to defect clustering.
-                """)
+
+            # Filter the DataFrame to focus on scaling factors <= 10
+            detail_df = df[(df["Defect Rate Scaling"] <= 10)]
+
+            # Create the line chart using Plotly Express
+            fig2 = px.line(
+                detail_df,
+                x="Defect Rate Scaling",
+                y="Yield (%)",
+                color="Alpha",  # Differentiates lines by Aplha value
+                title="Assembly Test Yield vs. Solder Defect Rate Scaling (Detail View)",
+                labels={
+                    "Defect Rate Scaling": "Solder Defect Rate Scaling (<= 10)",
+                    "Yield (%)": "Assembly Test Yield (%)"
+                },
+                template="plotly_white"
+            )
+        
+        with col_graph2_2:
+            # Display the chart in the second column
+            st.plotly_chart(fig2, use_container_width=True)
+
+
+        st.write("""
+        ### Assembly Test Yield vs. Solder Defects Analysis with Clustering Effect (Alpha) - Interpretation 
+        Adjusting the alpha value affects the clustering sensitivity, which in turn impacts the yield as defect rates increase.
+        Lower alpha values show a steeper drop in yield, indicating higher sensitivity to defect clustering.
+        """)
 
         st.subheader("Cost vs. Solder Defects Analysis")
         st.write("This app allows you to observe the cost increase with solder defect rate scaling for different boards.")
@@ -1071,7 +1100,7 @@ if uploaded_file:
                 y="Cost % Change",
                 color="Board",
                 title="Cost vs Solder Def Rate (Full Scale)",
-                labels={"Solder Def Rate Scaling": "Solder Def Rate Scaling", "Cost % Change": "Cost % Change"},
+                labels={"Solder Def Rate Scaling": "Solder Defect Rate Scaling", "Cost % Change": "Cost % Change"},
                 template="plotly_white",
                 log_x=True
             )
@@ -1097,7 +1126,7 @@ if uploaded_file:
                 color="Board",  # Differentiates lines by board
                 title="Cost vs Solder Def Rate (Detail View)",
                 labels={
-                    "Solder Def Rate Scaling": "Solder Def Rate Scaling (<= 10)",
+                    "Solder Def Rate Scaling": "Solder Defect Rate Scaling (<= 10)",
                     "Cost % Change": "Cost % Change (%)"
                 },
                 template="plotly_white"
