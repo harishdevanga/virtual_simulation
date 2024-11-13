@@ -929,10 +929,31 @@ if uploaded_file:
             )
             fig.update_layout(xaxis_title="Solder Defect Rate Scaling", yaxis_title="Assembly Test Yield (%)")
 
+
             # Streamlit app interface
             st.subheader("Yield vs. Solder Defects Analysis")
             st.write("This is to analyze and visualize the effect of solder defects on assembly yield for different board versions.")
             st.plotly_chart(fig)
+
+            # Filter the DataFrame to focus on scaling factors <= 10
+            detail_df = df[df["Defect Rate Scaling"] <= 10]
+
+            # Create the line chart using Plotly Express
+            fig2 = px.line(
+                detail_df,
+                x="Defect Rate Scaling",
+                y="Yield (%)",
+                color="Board",  # Differentiates lines by board
+                title="Assembly Test Yield vs. Solder Defect Rate Scaling (Detail View)",
+                labels={
+                    "Solder Def Rate Scaling": "Solder Def Rate Scaling (<= 10)",
+                    "Yield (%) Change": "Yield (%) Change (%)"
+                },
+                template="plotly_white"
+            )
+
+            # Display the chart in the second column
+            st.plotly_chart(fig2, use_container_width=True)
 
             st.write("""
             ### Analysis Interpretation
@@ -1002,9 +1023,87 @@ if uploaded_file:
                 """)
 
 
+        col_graph3, col_graph4 = st.columns(2)
+
+        with col_graph3:
+            # Extracting the columns (board names)
+            board_names = [col for col in edited_data.columns if col != "Data Points"]
+
+            # Extract solder joint counts dynamically based on the edited_data
+            solder_joint_row = edited_data.loc[edited_data["Data Points"] == "No. Solder Joints (N)"].squeeze()
+            defect_rate_row = edited_data.loc[edited_data["Data Points"] == "Defect Rate per Solder Joint (DR)"].squeeze()
+
+            scaling_factors = np.linspace(0.1, 100, 50)  # Scaling factors from 0.1 to 100
+
+            # Initialize a DataFrame to store results for all boards
+            plot_df = pd.DataFrame()
+
+            for board in board_names:
+                # Extract defect rate and solder joint values for the current board
+                solder_joints = solder_joint_row[board]
+                defect_rate = defect_rate_row[board]
+
+                # Calculate costs and cost percentages
+                costs = [defect_rate * solder_joints * scale for scale in scaling_factors]
+                cost_percentages = [scale * 100 for scale in scaling_factors]
+
+                # Create a temporary DataFrame for the current board
+                temp_df = pd.DataFrame({
+                    "Solder Def Rate Scaling": scaling_factors,
+                    "Cost % Change": costs,
+                    "Board": board
+                })
+
+                # Append to the main DataFrame
+                plot_df = pd.concat([plot_df, temp_df], ignore_index=True)
+            
+            # Graph 1: Cost vs Solder Def Rate (Full Scale)
+            fig1 = px.line(
+                plot_df,
+                x="Solder Def Rate Scaling",
+                y="Cost % Change",
+                color="Board",
+                title="Cost vs Solder Def Rate (Full Scale)",
+                labels={"Solder Def Rate Scaling": "Solder Def Rate Scaling", "Cost % Change": "Cost % Change"},
+                template="plotly_white",
+                log_x=True
+            )
+
+            st.subheader("Cost vs. Solder Defects Analysis")
+            st.write("This app allows you to observe the cost increase with solder defect rate scaling for different boards.")
+            st.plotly_chart(fig1, use_container_width=True)
+
+
+            st.write("""
+            ### Analysis Interpretation
+            The cost of testing and repairing boards increases exponentially as the defect rate rises.
+            Boards with higher numbers of solder joints exhibit greater sensitivity to defect scaling.
+            """)
+
+        with col_graph4:
+            # Filter the DataFrame to focus on scaling factors <= 10
+            detail_df = plot_df[plot_df["Solder Def Rate Scaling"] <= 10]
+
+            # Create the line chart using Plotly Express
+            fig2 = px.line(
+                detail_df,
+                x="Solder Def Rate Scaling",
+                y="Cost % Change",
+                color="Board",  # Differentiates lines by board
+                title="Cost vs Solder Def Rate (Detail View)",
+                labels={
+                    "Solder Def Rate Scaling": "Solder Def Rate Scaling (<= 10)",
+                    "Cost % Change": "Cost % Change (%)"
+                },
+                template="plotly_white"
+            )
+
+            # Display the chart in the second column
+            st.plotly_chart(fig2, use_container_width=True)
+
 # Revision History  Date: 9-Nov-2024
 # (updated the code for Overall yield_Component & Overall yield_Placement)
 # Pending 2 error worning msg has to be resolved.
 # added a  errors='coerce' to to convert colum to numeric type TypeError: Cannot set non-string value '0.5' into a StringArray.
 # add file download method to deploy in streamlit cloud
-# recent code = ieeetrial8.py
+# recent code = ieeetrial8_1.py
