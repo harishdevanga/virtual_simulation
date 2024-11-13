@@ -966,12 +966,12 @@ if uploaded_file:
         number of solder joints, making it more or less sensitive to solder defects.
         """)
 
+        st.write("-----------------------------------")
 
         # Streamlit app interface
         st.subheader("Assembly Test Yield vs. Solder Defects Analysis with Clustering Effect (Alpha)")
         st.write("This app allows you to adjust the clustering sensitivity (alpha) and observe its effect on yield.")
 
-        st.write("-----------------------------------")
 
         col_graph2,col_graph2_2= st.columns(2)
         with col_graph2:
