@@ -41,10 +41,11 @@ if new_analysis:
         shift_hr_day = df.at[0, 'Shift Hr/day']
         days_week = df.at[0, 'Days/Week']
         weeks_year = df.at[0, 'Weeks/Year']
-        hr_year_shift = df.at[0, 'Hr/Year (1 Shift)']
+        # hr_year_shift = df.at[0, 'Hr/Year (1 Shift)']
+        hr_year_shift = shift_hr_day * days_week * weeks_year
         overall_labor_efficiency = df.at[0, 'Overall Labor Efficiency']
-        total_batch_setup_time = df.at[0, 'Total Batch Setup Time, sec']
-        total_cycle_time = df.at[0, 'Total Cycle Time, sec']
+        # total_batch_setup_time = df.at[0, 'Total Batch Setup Time, sec']
+        # total_cycle_time = df.at[0, 'Total Cycle Time, sec']
         
         # Hide the dataframe
         st.write("")
@@ -54,16 +55,14 @@ if new_analysis:
 
         with col1:
             shift_hr_day_input = st.text_input('Shift Hr/day', value=shift_hr_day, disabled=True)
-            weeks_year_input = st.text_input('Weeks/Year', value=weeks_year, disabled=True)
-            overall_labor_efficiency_input = st.text_input('Overall Labor Efficiency', value=overall_labor_efficiency, disabled=True)
+            # weeks_year_input = st.text_input('Weeks/Year', value=weeks_year, disabled=True)
 
         with col2:
             days_week_input = st.text_input('Days/Week', value=days_week, disabled=True)
-            hr_year_shift_input = st.text_input('Hr/Year (1 Shift)', value=hr_year_shift, disabled=True)
-            total_batch_setup_time_input = st.text_input('Total Batch Setup Time, sec', value=total_batch_setup_time)
+            # hr_year_shift_input = st.text_input('Hr/Year (1 Shift)', value=hr_year_shift, disabled=True)
 
         with col3:
-            total_cycle_time_input = st.text_input('Total Cycle Time, sec', value=total_cycle_time)
+            overall_labor_efficiency_input = st.text_input('Overall Labor Efficiency', value=overall_labor_efficiency, disabled=True)
 
         # File uploader for the second Excel file (xydata.xlsx, sheet 'xydata_version')
         uploaded_file_xydata = st.file_uploader("Upload the xydata.xlsx file", type=["xlsx"])
@@ -84,22 +83,27 @@ if new_analysis:
 
             # Calculate values for the cycle time and other metrics
             component_count = df2['REFDES'].count()
-            total_cycle_time_calc = df3['Cycle Time_Master'].sum()
-            bottom_cycle_time = df3[df3['Topbottom'] == 'NO']['Cycle Time_Master'].sum()
-            top_cycle_time = df3[df3['Topbottom'] == 'YES']['Cycle Time_Master'].sum()
+            # total_cycle_time_calc = df3['Cycle Time_Master'].sum()
+            bottom_pnp_cycle_time = df3[df3['Topbottom'] == 'NO']['Cycle Time_Master'].sum()
+            top_pnp_cycle_time = df3[df3['Topbottom'] == 'YES']['Cycle Time_Master'].sum()
 
+            xyoutput_cl1, xyoutput_cl2, xyoutput_cl3, xyoutput_cl4 = st.columns(4)              
             # Create text input boxes for the calculated values
-            with col1:
+            with xyoutput_cl1:
                 solder_joints_input = st.text_input('Solder Joints')
 
-            with col2:
+            with xyoutput_cl2:
                 component_count_input = st.text_input('Component Count', value=component_count, disabled=True)
 
-            with col3:
-                bottom_cycle_time_input = st.text_input('Bottom Cycle Time', value=bottom_cycle_time, disabled=True)
-                top_cycle_time_input = st.text_input('Top Cycle Time', value=top_cycle_time, disabled=True)
+            with xyoutput_cl3:
+                bottom_pnp_cycle_time_input = st.text_input('Bottom Pick&Place Cycle Time', value=bottom_pnp_cycle_time, disabled=True)
+                # total_batch_setup_time_input = st.text_input('Total Batch Setup Time, sec', value=total_batch_setup_time)
 
-                    # Create an in-memory Excel file
+            with xyoutput_cl4:
+                # total_cycle_time_input = st.text_input('Total Cycle Time, sec', value=total_cycle_time)
+                top_pnp_cycle_time_input = st.text_input('Top Pick&Place Cycle Time', value=top_pnp_cycle_time, disabled=True)
+
+        # Create an in-memory Excel file
             output = io.BytesIO()
             with pd.ExcelWriter(output, engine="openpyxl") as writer:
                 # Write original 'xydata_version' sheet
@@ -217,14 +221,35 @@ if new_analysis:
 
             # Display the updated dataframe with a header
             st.markdown("## Process Mapping")
-            st.dataframe(st.session_state['filtered_data'])
+            st.dataframe(st.session_state['filtered_data'], use_container_width=True)
+            edited_data=st.session_state['filtered_data']
+
+            # Ensure the 'Process Cycle Time' & 'Batch Set up Time' column is numeric
+            edited_data['Process Cycle Time'] = pd.to_numeric(edited_data['Process Cycle Time'], errors='coerce')
+            edited_data['Batch Set up Time'] = pd.to_numeric(edited_data['Batch Set up Time'], errors='coerce')
+
+            total_cycle_time_calc = edited_data['Process Cycle Time'].sum()
+            total_batch_setup_time = edited_data['Batch Set up Time'].sum()
+
+
+            # # Group by 'Side' and calculate the total sum of 'Process Cycle Time' for each side
+            # side_cycle_time_sum = edited_data.groupby('Side')['Process Cycle Time'].sum()
+
+            # Find the maximum overall Process Cycle Time
+            Max_Overall_PCBA_CT_calc = edited_data['Process Cycle Time'].max()
+
+
+            totalct_cl1, totalbst_cl2, xx_cl3, xx_cl4 = st.columns(4)              
+            # Create text input boxes for the calculated values
+
+            with totalct_cl1:
+                total_cycle_time_display = st.text_input('Total Cycle Time', value=total_cycle_time_calc, disabled=True)
+
+            with totalbst_cl2:
+                total_batch_setup_time_display = st.text_input('Total Batch Set up Time', value=total_batch_setup_time, disabled=True)
 
             # Provide inputs for file name, sheet name, and path
             st.markdown("### Save Data to Excel")
-
-            # file_name = st.text_input("Enter the Excel file name (with .xlsx extension):")
-            # sheet_name = st.text_input("Enter the sheet name:")
-            # save_path = st.text_input("Enter the path to save the Excel file:")
 
             # Provide inputs for file name and sheet name only (without path)
             file_name = st.text_input("Enter the Excel file name (with .xlsx extension):")
@@ -232,8 +257,6 @@ if new_analysis:
 
             # Add a button to save the entire DataFrame
             if st.button("Save DataFrame to Excel"):
-                # full_path = os.path.join(save_path, file_name)
-                # Use a temporary directory to save the file
                 with tempfile.TemporaryDirectory() as tmpdirname:
                     full_path = os.path.join(tmpdirname, file_name)
 
@@ -246,10 +269,10 @@ if new_analysis:
                         for col, value in zip(
                             ['Max Overall PCBA CT', 'Shift Hr/day', 'Days/Week', 'Weeks/Year', 'Hr/Year (1 Shift)', 
                             'Overall Labor Efficiency', 'Total Batch Setup Time, sec', 'Total Cycle Time, sec', 
-                            'Bottom Cycle Time', 'Top Cycle Time', 'Solder Joints', 'Component Count'],
-                            [total_cycle_time_calc, shift_hr_day, days_week, weeks_year, hr_year_shift, overall_labor_efficiency, 
-                            total_batch_setup_time, total_cycle_time_calc, bottom_cycle_time, top_cycle_time, solder_joints_input, 
-                            component_count]):
+                            'Bottom P&P Cycle Time', 'Top P&P Cycle Time', 'Solder Joints', 'Component Count'],
+                            [Max_Overall_PCBA_CT_calc, shift_hr_day, days_week, weeks_year, hr_year_shift, 
+                            overall_labor_efficiency, total_batch_setup_time, total_cycle_time_calc, 
+                            bottom_pnp_cycle_time, top_pnp_cycle_time, solder_joints_input, component_count]):
                             final_df.at[0, col] = value
 
                         final_df.to_excel(writer, sheet_name=sheet_name, index=False)
@@ -286,9 +309,9 @@ if new_analysis:
                                     for col, value in zip(
                                         ['Max Overall PCBA CT', 'Shift Hr/day', 'Days/Week', 'Weeks/Year', 'Hr/Year (1 Shift)', 
                                         'Overall Labor Efficiency', 'Total Batch Setup Time, sec', 'Total Cycle Time, sec', 
-                                        'Bottom Cycle Time', 'Top Cycle Time', 'Solder Joints', 'Component Count'],
-                                        [total_cycle_time_calc, shift_hr_day, days_week, weeks_year, hr_year_shift, overall_labor_efficiency, 
-                                        total_batch_setup_time, total_cycle_time_calc, bottom_cycle_time, top_cycle_time, solder_joints_input, 
+                                        'Bottom P&P Cycle Time', 'Top P&P Cycle Time', 'Solder Joints', 'Component Count'],
+                                        [Max_Overall_PCBA_CT_calc, shift_hr_day, days_week, overall_labor_efficiency, 
+                                        total_batch_setup_time, total_cycle_time_calc, bottom_pnp_cycle_time, top_pnp_cycle_time, solder_joints_input, 
                                         component_count]):
                                         final_df.at[0, col] = value
 
@@ -300,12 +323,13 @@ if new_analysis:
                                 
                                 # Add the additional fields in the first row, without overwriting existing data
                                 for col, value in zip(
+                                    
                                     ['Max Overall PCBA CT', 'Shift Hr/day', 'Days/Week', 'Weeks/Year', 'Hr/Year (1 Shift)', 
                                     'Overall Labor Efficiency', 'Total Batch Setup Time, sec', 'Total Cycle Time, sec', 
-                                    'Bottom Cycle Time', 'Top Cycle Time', 'Solder Joints', 'Component Count'],
-                                    [total_cycle_time_calc, shift_hr_day, days_week, weeks_year, hr_year_shift, overall_labor_efficiency, 
-                                    total_batch_setup_time, total_cycle_time_calc, bottom_cycle_time, top_cycle_time, solder_joints_input, 
-                                    component_count]):
+                                    'Bottom P&P Cycle Time', 'Top P&P Cycle Time', 'Solder Joints', 'Component Count'],
+                                    [Max_Overall_PCBA_CT_calc, shift_hr_day, days_week, weeks_year, hr_year_shift, 
+                                    overall_labor_efficiency, total_batch_setup_time, total_cycle_time_calc, 
+                                    bottom_pnp_cycle_time, top_pnp_cycle_time, solder_joints_input, component_count]):
                                     final_df.at[0, col] = value
 
                                 final_df.to_excel(writer, sheet_name=sheet_name, index=False)
@@ -361,10 +385,11 @@ if existing_analysis:
             overall_labor_efficiency = st.session_state.df.at[0, 'Overall Labor Efficiency']
             total_batch_setup_time = st.session_state.df.at[0, 'Total Batch Setup Time, sec']
             total_cycle_time = st.session_state.df.at[0, 'Total Cycle Time, sec']
-            bottom_cycle_time = st.session_state.df.at[0, 'Bottom Cycle Time']
-            top_cycle_time = st.session_state.df.at[0, 'Top Cycle Time']
+            bottom_pnp_cycle_time = st.session_state.df.at[0, 'Bottom P&P Cycle Time']
+            top_pnp_cycle_time = st.session_state.df.at[0, 'Top P&P Cycle Time']
             solder_joints = st.session_state.df.at[0, 'Solder Joints']
             component_count = st.session_state.df.at[0, 'Component Count']
+            Max_Overall_PCBA_CT = st.session_state.df.at[0, 'Max Overall PCBA CT']
             
             # Hide the dataframe
             st.write("")
@@ -375,8 +400,8 @@ if existing_analysis:
             with col1:
                 shift_hr_day_input = st.text_input('Shift Hr/day', value=shift_hr_day, disabled=True)
                 weeks_year_input = st.text_input('Weeks/Year', value=weeks_year, disabled=True)
-                overall_labor_efficiency_input = st.text_input('Overall Labor Efficiency', value=overall_labor_efficiency, disabled=True)
-                solder_joints_input = st.text_input('Solder Joints', value=solder_joints, disabled=True)
+                total_cycle_time_input = st.text_input('Total Cycle Time, sec', value=total_cycle_time, disabled=True)
+                Max_Overall_PCBA_CT_imput = st.text_input('Max Overall PCBA CT', value=Max_Overall_PCBA_CT, disabled=True)
 
             with col2:
                 days_week_input = st.text_input('Days/Week', value=days_week, disabled=True)
@@ -385,14 +410,32 @@ if existing_analysis:
                 component_count_input = st.text_input('Component Count', value=component_count, disabled=True)
 
             with col3:
-                total_cycle_time_input = st.text_input('Total Cycle Time, sec', value=total_cycle_time, disabled=True)
-                bottom_cycle_time_input = st.text_input('Bottom Cycle Time', bottom_cycle_time, disabled=True)
-                top_cycle_time_input = st.text_input('Top Cycle Time', value=top_cycle_time, disabled=True)
+                overall_labor_efficiency_input = st.text_input('Overall Labor Efficiency', value=overall_labor_efficiency, disabled=True)
+                solder_joints_input = st.text_input('Solder Joints', value=solder_joints, disabled=True)
+                bottom_pnp_cycle_time_input = st.text_input('Bottom P&P Cycle Time', bottom_pnp_cycle_time, disabled=True)
+                top_pnp_cycle_time_input = st.text_input('Top P&P Cycle Time', value=top_pnp_cycle_time, disabled=True)
             
             # Display data in a table
             st.subheader("Data Table")
             edited_data = st.data_editor(st.session_state.df)
-        
+
+            # Ensure the 'Process Cycle Time' & 'Batch Set up Time' column is numeric
+            edited_data['Process Cycle Time'] = pd.to_numeric(edited_data['Process Cycle Time'], errors='coerce')
+            edited_data['Batch Set up Time'] = pd.to_numeric(edited_data['Batch Set up Time'], errors='coerce')
+
+            total_cycle_time_recalc = edited_data['Process Cycle Time'].sum()
+            total_batch_setup_time_recalc = edited_data['Batch Set up Time'].sum()
+            Max_Overall_PCBA_CT_recalc = edited_data['Process Cycle Time'].max()
+
+            # Overwrite specific cells with the recalculated values
+            edited_data.loc[0, 'Total Cycle Time, sec'] = total_cycle_time_recalc  # Example: overwrite row 0's 'Process Cycle Time'
+            edited_data.loc[0, 'Total Batch Setup Time, sec'] = total_batch_setup_time_recalc  # Example: overwrite row 0's 'Batch Set up Time'
+            edited_data.loc[0, 'Max Overall PCBA CT'] = Max_Overall_PCBA_CT_recalc  # Overwrite or add new column value
+
+            # Save the updated DataFrame back to the session state
+            st.session_state.edited_data = edited_data
+
+            
             # Create buttons side by side for adding new rows and saving the table
             col1, col2 = st.columns([1, 1])
 
@@ -427,7 +470,7 @@ if existing_analysis:
                         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                     )
                     st.success("Table saved and download ready!")
-            
+
             with col2:
                 if st.button("Add New Row"):
                     # Create a new row with NaN values
@@ -439,17 +482,35 @@ if existing_analysis:
 
             # Create buttons side by side for removing rows and saving removed rows
             col3, col4 = st.columns([1, 1])
-
+            
             with col3:
                 row_to_delete = st.selectbox("Select row to delete", st.session_state.df.index)
                 if st.button("Remove Row"):
                     if 'removed_rows' not in st.session_state:
                         st.session_state.removed_rows = pd.DataFrame()
-                    st.session_state.removed_rows = pd.concat([st.session_state.removed_rows, st.session_state.df.loc[[row_to_delete]]])
-                    st.session_state.df = st.session_state.df.drop(row_to_delete).reset_index(drop=True)
-                    st.session_state.edited_sheets[sheet_name] = st.session_state.df  # Update session state with removed row
-                    st.rerun()
 
+                    # Add the removed row to 'removed_rows' session state
+                    st.session_state.removed_rows = pd.concat([st.session_state.removed_rows, st.session_state.df.loc[[row_to_delete]]])
+
+                    # Drop the selected row and reset the index
+                    st.session_state.df = st.session_state.df.drop(row_to_delete).reset_index(drop=True)
+                    edited_data = st.session_state.df  # Ensure the edited data is synchronized
+                    
+                    # Recalculate values after the row is removed
+                    total_cycle_time_recalc = edited_data['Process Cycle Time'].sum()
+                    total_batch_setup_time_recalc = edited_data['Batch Set up Time'].sum()
+                    Max_Overall_PCBA_CT_recalc = edited_data['Process Cycle Time'].max()
+                    
+                    # Overwrite specific cells with the recalculated values
+                    edited_data.loc[0, 'Total Cycle Time, sec'] = total_cycle_time_recalc
+                    edited_data.loc[0, 'Total Batch Setup Time, sec'] = total_batch_setup_time_recalc
+                    edited_data.loc[0, 'Max Overall PCBA CT'] = Max_Overall_PCBA_CT_recalc
+
+                    # Save the updated DataFrame back to the session state
+                    st.session_state.edited_data = edited_data
+                    st.session_state.edited_sheets[sheet_name] = edited_data  # Update session state with the new data
+                    st.rerun()
+            
             with col4:
                 if st.button("Save Removed Rows"):
                     if 'removed_rows' in st.session_state and not st.session_state.removed_rows.empty:
@@ -481,8 +542,18 @@ if existing_analysis:
                             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                         )
                         st.success("Removed rows saved and download ready!")
+
+            st.subheader("Recalculated Values As Per Edited Data Table Values:")
+            recalct_cl1, recalbst_cl2, recalmax_cl3 = st.columns(3)
+
+            with recalct_cl1:
+                st.text_input('Recalculated - Total Cycle Time, sec', value=total_cycle_time_recalc, disabled=True)
+            with recalbst_cl2:
+                st.text_input('Recalculated - Total Batch Setup Time, sec', value=total_batch_setup_time_recalc, disabled=True)
+            with recalmax_cl3:
+                st.text_input('Recalculated - Max Overall PCBA CT, sec', value=Max_Overall_PCBA_CT_recalc, disabled=True)
             
-# revision history 10-Oct-24
+# revision history 16-Oct-24
 # Added optoin to tempfile instead of os directory to handle cloud deployment in new_analysis
 # existing_analysis is added along with new_analysis
-# recent code trial35_2.py
+# trial35_3.py - updated the layout and added dynamic calculation for Total CT, Max CT & Batch setup time.
