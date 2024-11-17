@@ -239,82 +239,164 @@ if uploaded_file:
 st.subheader(":point_right: Yield in PCBA (IEEE ref.)")
 
 # Dropdown to open and minimize file uploader
-with st.expander("Upload Your <Yield in PCBA (IEEE ref.)> File Here", expanded=True):  # Collapsible dropdown for file uploader
-    # Step 1: Upload the Excel file and load the sheet named "ieee_analysis"
+with st.expander("Upload Your <Yield in PCBA (IEEE ref.)> File Here", expanded=True):
+    # Step 1: Upload the Excel file
     uploaded_file = st.file_uploader("Choose Your <Yield in PCBA (IEEE ref.)> File", type=["xlsx"])
+    if uploaded_file is not None:
+        display_data = pd.read_excel(uploaded_file, sheet_name=0)
+        display_data    
 
-if uploaded_file:
-    # Load the specific sheet
-    df = pd.read_excel(uploaded_file, sheet_name="ieee_analysis")
+if uploaded_file is not None:
+    # Read the uploaded Excel file into a DataFrame
+    try:
+        edited_data = pd.read_excel(uploaded_file, sheet_name=0)  # Assuming the first sheet contains data
 
-    # Step 2: Filter the columns that start with 'MK', 'X', or 'SOP'
-    relevant_columns = [col for col in df.columns if col.startswith(('MK', 'X', 'SOP'))]
+        st.write("-----------------------------------")
+        st.subheader("Yield vs. Solder Defects Analysis")
+        col_graph1, col_graph1_1 = st.columns(2)
+        with col_graph1:
+            # Extracting the columns (board names)
+            board_names = [col for col in edited_data.columns if col != "Data Points"]
 
-    # Step 3: Filter rows where 'Data Points' column contains "Overall yield_Soldering", "Overall yield_Component", "Overall yield_Placement"
-    filtered_df = df[df['Data Points'].isin(["Overall yield_Soldering", "Overall yield_Component", "Overall yield_Placement"])]
+            # Extract solder joint counts dynamically based on the edited_data
+            solder_joint_row = edited_data.loc[edited_data["Data Points"] == "No. Solder Joints (N)"].squeeze()
+            solder_joints = {board: solder_joint_row[board] for board in board_names}
 
-    # Step 4: Prepare the final table with filtered rows and relevant columns
-    final_table = filtered_df[['Data Points'] + relevant_columns].set_index('Data Points')
+            # Defect rate scaling values (logarithmic range for better visualization)
+            defect_rate_scaling = np.logspace(-1, 2, 50)  # From 0.1 to 100 in logarithmic scale
 
-    # Step 5: Format the 'Yield Value' row values as percentages
-    final_table.loc["Overall yield_Soldering"] = final_table.loc["Overall yield_Soldering"].astype(float) * 100
-    final_table.loc["Overall yield_Component"] = final_table.loc["Overall yield_Component"].astype(float) * 100
-    final_table.loc["Overall yield_Placement"] = final_table.loc["Overall yield_Placement"].astype(float) * 100
+            # Define function to calculate yield based on defect rate scaling
+            def calculate_yield(solder_joints, defect_rate_scaling, defect_rate_per_joint):
+                overall_defect_rate = defect_rate_scaling * defect_rate_per_joint
+                yield_percentage = 100 * np.exp(-overall_defect_rate * solder_joints)
+                return yield_percentage
 
-    # Step 6: Display the final table with percentages
-    st.write("Filtered Data:")
-    st.dataframe(final_table.style.format({
-        "Overall yield_Soldering": "{:.2f}%",
-        "Overall yield_Component": "{:.2f}%",
-        "Overall yield_Placement": "{:.2f}%"
-    }))
+            # Get defect rate per joint from the edited_data DataFrame
+            defect_rate_per_joint_row = edited_data.loc[edited_data["Data Points"] == "Defect Rate per Solder Joint (DR)"].squeeze()
+            defect_rates = {board: defect_rate_per_joint_row[board] for board in board_names}
 
-    # Step 7: Create a combination graph (e.g., grouped bar chart)
-    yield_s_values = final_table.loc["Overall yield_Soldering"]
-    yield_c_values = final_table.loc["Overall yield_Component"]
-    yield_p_values = final_table.loc["Overall yield_Placement"]
+            # Calculate yields for each board
+            yield_data = []
+            for board in board_names:
+                yield_percentage = calculate_yield(solder_joints[board], defect_rate_scaling, defect_rates[board])
+                yield_data.append(pd.DataFrame({
+                    "Defect Rate Scaling": defect_rate_scaling,
+                    "Yield (%)": yield_percentage,
+                    "Board": board
+                }))
 
-    # Create the figure for a grouped bar chart
-    fig = go.Figure()
+            # Concatenate all yield data into a single DataFrame
+            df = pd.concat(yield_data, ignore_index=True)
 
-    # Add bar traces for each yield type
-    fig.add_trace(go.Bar(
-        x=relevant_columns,  # MK, X, and SOP columns
-        y=yield_s_values,
-        name='Overall yield_Soldering',
-        marker_color='blue'
-    ))
+            # Plotting the yield vs defect rate scaling
+            fig = px.line(
+                df, x="Defect Rate Scaling", y="Yield (%)", color="Board",
+                log_x=True,  # Log scale for defect rate scaling
+                title="Yield vs. Solder Defect Rate (Full Scale)"
+            )
+            fig.update_layout(xaxis_title="Solder Defect Rate Scaling", yaxis_title="Yield (%)")
+            st.plotly_chart(fig)
 
-    fig.add_trace(go.Bar(
-        x=relevant_columns,
-        y=yield_c_values,
-        name='Overall yield_Component',
-        marker_color='green'
-    ))
+            # Filter the DataFrame to focus on scaling factors <= 10
+            detail_df = df[df["Defect Rate Scaling"] <= 10]
 
-    fig.add_trace(go.Bar(
-        x=relevant_columns,
-        y=yield_p_values,
-        name='Overall yield_Placement',
-        marker_color='red'
-    ))
+            # Create the line chart using Plotly Express
+            fig2 = px.line(
+                detail_df,
+                x="Defect Rate Scaling",
+                y="Yield (%)",
+                color="Board",  # Differentiates lines by board
+                title="Yield vs. Solder Defect Rate Scaling (Detail View)",
+                labels={
+                    "Defect Rate Scaling": "Solder Defect Rate Scaling (<= 10)",
+                    "Yield (%) Change": "Yield (%) Change (%)"
+                },
+                template="plotly_white"
+            )
+        with col_graph1_1:
+            # Display the chart in the second column
+            st.plotly_chart(fig2, use_container_width=True)
 
-    # Update the layout to be a grouped bar chart
-    fig.update_layout(
-        title="Comparison of Yields (Soldering, Component, Placement)",
-        xaxis_title="Columns (MK, X, SOP)",
-        yaxis_title="Yield (%)",
-        barmode='group',  # This ensures the bars are grouped side by side
-        legend=dict(x=0.1, y=1.1, orientation="h"),
-        height=600
-    )
+        st.write("-----------------------------------")
 
-    # Step 8: Display the graph below the table
-    st.write("Graph Representation:")
-    st.plotly_chart(fig)
+        st.subheader("Cost vs. Solder Defects Analysis")         
+        col_graph3, col_graph3_3 = st.columns(2)
+        with col_graph3:
+            # Extracting the columns (board names)
+            board_names = [col for col in edited_data.columns if col != "Data Points"]
+
+            # Extract solder joint counts dynamically based on the edited_data
+            solder_joint_row = edited_data.loc[edited_data["Data Points"] == "No. Solder Joints (N)"].squeeze()
+            defect_rate_row = edited_data.loc[edited_data["Data Points"] == "Defect Rate per Solder Joint (DR)"].squeeze()
+
+            scaling_factors = np.linspace(0.1, 100, 50)  # Scaling factors from 0.1 to 100
+
+            # Initialize a DataFrame to store results for all boards
+            plot_df = pd.DataFrame()
+
+            for board in board_names:
+                # Extract defect rate and solder joint values for the current board
+                solder_joints = solder_joint_row[board]
+                defect_rate = defect_rate_row[board]
+
+                # Calculate costs and cost percentages
+                costs = [defect_rate * solder_joints * scale for scale in scaling_factors]
+                cost_percentages = [scale * 100 for scale in scaling_factors]
+
+                # Create a temporary DataFrame for the current board
+                temp_df = pd.DataFrame({
+                    "Solder Defect Rate Scaling": scaling_factors,
+                    "Cost % Change": costs,
+                    "Board": board
+                })
+
+                # Append to the main DataFrame
+                plot_df = pd.concat([plot_df, temp_df], ignore_index=True)
+            
+            # Graph 1: Cost vs Solder Def Rate (Full Scale)
+            fig1 = px.line(
+                plot_df,
+                x="Solder Defect Rate Scaling",
+                y="Cost % Change",
+                color="Board",
+                title="Cost vs Solder Defect Rate (Full Scale)",
+                labels={"Solder Defect Rate Scaling": "Solder Defect Rate Scaling", "Cost % Change": "Cost % Change"},
+                template="plotly_white",
+                log_x=True
+            )
+
+            st.plotly_chart(fig1, use_container_width=True)
+
+
+        with col_graph3_3:
+            # Filter the DataFrame to focus on scaling factors <= 10
+            detail_df = plot_df[plot_df["Solder Defect Rate Scaling"] <= 10]
+
+            # Create the line chart using Plotly Express
+            fig2 = px.line(
+                detail_df,
+                x="Solder Defect Rate Scaling",
+                y="Cost % Change",
+                color="Board",  # Differentiates lines by board
+                title="Cost vs Solder Defect Rate (Detail View)",
+                labels={
+                    "Solder Defect Rate Scaling": "Solder Defect Rate Scaling (<= 10)",
+                    "Cost % Change": "Cost % Change"
+                },
+                template="plotly_white"
+            )
+
+            # Display the chart in the second column
+            st.plotly_chart(fig2, use_container_width=True)
+
+        st.write("-----------------------------------")
+
+    except Exception as e:
+        st.error(f"Error reading the file: {e}")
+else:
+    st.warning("Please upload a valid Excel file.")
+
 
 # Logic Sheet to select similar to super market select box, then apply pivot
 # , then show the MKx data in a table summary similar to DFx summary
-# recent code ==> Homepage1.py
-
-
+# recent code ==> Homepage1_1.py
