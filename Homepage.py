@@ -41,7 +41,7 @@ if uploaded_file:
     xls_summary = load_data(uploaded_file)
 
     # Filter sheet names that start with 'MK', 'X', or 'SOP'
-    sheets_to_read = [sheet for sheet in xls_summary.keys() if sheet.startswith(('MK', 'X', 'SOP'))]
+    sheets_to_read = [sheet for sheet in xls_summary.keys() if sheet.startswith(('MK', 'X', "X1", 'SOP', "X1.1", "X1.2", "X1.3", "mk", "poc", "x", "x1.1", "x1.2", "x1.3"))]
 
     # Initialize an empty list to store dataframes
     all_data = []
