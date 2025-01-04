@@ -400,11 +400,10 @@ if new_analysis:
 
                 # Solder Paste - Top
                 with solder_top_col:
-                    st.subheader("Solder Paste - Top")
+                    st.subheader("Solder Paste - Top & Bot")
                     # Board dimensions (Board Length and Board Width in the same line)
                     board_dim_col1, board_dim_col2 = st.columns(2)
                     with board_dim_col1:
-                        # st.write("Solder Paste - Top")
                         board_length = st.text_input('Board Length(mm)', value="", key="board_length")
                     with board_dim_col2:
                         # st.write("Solder Paste - Bot")
@@ -574,7 +573,7 @@ if new_analysis:
                         st.text_input('Solder Wt/Brd(g)', value=f"{weight_of_Solder_per_board:.2f}", key="weight_of_Solder_per_board", disabled=True) 
 
                     with barrel1_col:
-                        st.subheader("Solder Bar")
+                        st.subheader("")
                         # Input Fields                  
                         barrel_dia = st.text_input('Barrel Dia(mm)', value="", key="barrel_dia", disabled=False)
                         board_thick = st.text_input('Board Thick(mm)', value="", key="board_thick", disabled=False)
@@ -1069,11 +1068,10 @@ if existing_analysis:
 
     # Solder Paste - Top
     with solder_top_col:
-        st.subheader("Solder Paste - Top")
+        st.subheader("Solder Paste - Top & Bot")
         # Board dimensions (Board Length and Board Width in the same line)
         board_dim_col1, board_dim_col2 = st.columns(2)
         with board_dim_col1:
-            # st.write("Solder Paste - Top")
             board_length = st.text_input('Board Length(mm)', value="", key="board_length")
         with board_dim_col2:
             # st.write("Solder Paste - Bot")
@@ -1243,7 +1241,7 @@ if existing_analysis:
             st.text_input('Solder Wt/Brd(g)', value=f"{weight_of_Solder_per_board:.2f}", key="weight_of_Solder_per_board", disabled=True) 
 
         with barrel1_col:
-            st.subheader("Solder Bar")
+            st.subheader("")
             # Input Fields                  
             barrel_dia = st.text_input('Barrel Dia(mm)', value="", key="barrel_dia", disabled=False)
             board_thick = st.text_input('Board Thick(mm)', value="", key="board_thick", disabled=False)
