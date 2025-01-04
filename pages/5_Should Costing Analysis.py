@@ -1544,15 +1544,17 @@ if existing_analysis:
 
 
     # Data for the pie chart
-    labels = ['RM Cost', 'Conversion Cost']
-    values = [rm_cost_value, conversion_cost_value]
+    rm_cost_value_from_edited_data2 = edited_data2.at[0, "RM Cost ($)"] # To take the contents from edited_data2 
+    conversion_cost_value_from_edited_data2 = edited_data2.at[0, "Conversion Cost ($)"]
+    labels = ["RM Cost ($)", "Conversion Cost ($)"]
+    values = [rm_cost_value_from_edited_data2, conversion_cost_value_from_edited_data2]
 
     # Create the pie chart
     fig = go.Figure(data=[go.Pie(labels=labels, values=values, hole=0.4)])
 
     # Add title and adjust layout
     fig.update_layout(
-        title_text='RM Cost vs Conversion Cost % Visualization',
+        title_text='RM vs Conversion Cost %',
         height=600,  # Adjust height as needed
         width=800,   # Adjust width as needed
         margin=dict(t=50, b=50, l=50, r=50)  # Adjust margins as needed
@@ -1565,6 +1567,14 @@ if existing_analysis:
         st.plotly_chart(fig, use_container_width=True)
 
     # Horizontal Bar Chart 
+    total_material_cost_value_edited_data2 = edited_data2.at[0, "Material Cost ($)"] # To take the contents from edited_data2 
+    total_manufacturing_cost_value_edited_data2 = edited_data2.at[0, "Manufacturing Cost ($)"]
+    total_ohp_cost_value_edited_data2 = edited_data2.at[0, "OH&P ($)"]
+    r_n_d_cost_value_edited_data2 = edited_data2.at[0, "R&D ($)"]
+    warranty_cost_value_edited_data2 = edited_data2.at[0, "Warranty ($)"]
+    sg_and_a_cost_value_edited_data2 = edited_data2.at[0, "SG&A ($)"]
+    grand_total_cost_value_edited_data2 = edited_data2.at[0, "Total Cost ($)"]
+
     data = {
         "Cost Component": [
             "Material Cost ($)",
@@ -1576,13 +1586,13 @@ if existing_analysis:
             "Total Cost ($)"
         ],
         "Amount": [
-            total_material_cost_value,
-            total_manufacturing_cost_value,
-            total_ohp_cost_value,
-            r_n_d_cost_value,
-            warranty_cost_value,
-            sg_and_a_cost_value,
-            grand_total_cost_value
+            total_material_cost_value_edited_data2,
+            total_manufacturing_cost_value_edited_data2,
+            total_ohp_cost_value_edited_data2,
+            r_n_d_cost_value_edited_data2,
+            warranty_cost_value_edited_data2,
+            sg_and_a_cost_value_edited_data2,
+            grand_total_cost_value_edited_data2
         ]
     }
 
