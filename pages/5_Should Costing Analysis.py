@@ -973,7 +973,7 @@ if existing_analysis:
             if isinstance(df7, dict):
                 with processmapping_col1:
                     # Allow user to select a sheet
-                    sheet_name = st.selectbox("Select the sheet", df7.keys())
+                    sheet_name = st.selectbox("Select the relavant NRE sheet", df7.keys())
 
                 if sheet_name in df7:
                     nre_selected_data = df7[sheet_name]
@@ -981,7 +981,7 @@ if existing_analysis:
 
         st.subheader("NRE Costing Data Table")
         # Display the updated DataFrame
-        st.data_editor(nre_selected_data, key=f"data_editor_{sheet_name}_updated")
+        st.data_editor(nre_selected_data, key=f"data_editor_{sheet_name}_nre_updated")
 
     with upload_costing_file_col:
         # File uploader for Excel/CSV/XLSM files
@@ -997,26 +997,26 @@ if existing_analysis:
                     df = pd.read_excel(file, sheet_name=None)
                 return df
 
-            df6 = load_data(uploaded_file)  # Load the Process Mapping data
+            df8 = load_data(uploaded_file)  # Load the Process Mapping data
 
             # Initialize session state to store edited data for each sheet
             if 'edited_sheets' not in st.session_state:
                 st.session_state.edited_sheets = {}
 
-            processmapping_col1, _ = st.columns(2)
+            processmapping_col2, _ = st.columns(2)
 
-            if isinstance(df6, dict):
-                with processmapping_col1:
+            if isinstance(df8, dict):
+                with processmapping_col2:
                     # Allow user to select a sheet
-                    sheet_name = st.selectbox("Select the sheet", df6.keys())
+                    sheet_name = st.selectbox("Select the relavant Should Costing sheet", df8.keys())
 
-                if sheet_name in df6:
-                    selected_data = df6[sheet_name]
+                if sheet_name in df8:
+                    selected_data = df8[sheet_name]
                     st.session_state.df = pd.DataFrame(selected_data)  # Load original data from the selected sheet
 
         st.subheader("Should Costing Data Table")
         # Display the updated DataFrame
-        st.data_editor(selected_data, key=f"data_editor_{sheet_name}_updated")
+        st.data_editor(selected_data, key=f"data_editor_{sheet_name}_shc_updated")
     st.session_state.edited_sheets[sheet_name] = selected_data
 
     st.header("Consumable Costing")
