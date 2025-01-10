@@ -69,6 +69,7 @@ if new_analysis:
         df2 = pd.read_excel(uploaded_file_simulation_db, sheet_name='NRE')
 
         st.write("-------------------")
+        st.markdown("## NRE Mapping")
 
         # Create an empty DataFrame with the defined columns
         initial_df = pd.DataFrame(columns=['Item', 'Unit Price (₹)', 'Life Cycle (Boards)', 'Qty for LCV', "Extended Price (₹)"])
@@ -197,7 +198,6 @@ if new_analysis:
                 st.session_state['reset_selectbox'] += 1
 
         # Display the updated dataframe with a header
-        st.markdown("## NRE Mapping")
         st.dataframe(st.session_state['filtered_data'], use_container_width=True)
 
         totalcost_col1, toolmaintenance_col2, totalextendedprice_col3, nreperunit_col4 = st.columns(4)
@@ -206,21 +206,21 @@ if new_analysis:
             # Convert the 'Extended Price (₹)' column to numeric
             st.session_state['filtered_data']['Extended Price (₹)'] = pd.to_numeric(st.session_state['filtered_data']['Extended Price (₹)'], errors='coerce')            
             # Calculate the total cost
-            total_cost = st.session_state['filtered_data']['Extended Price (₹)'].sum()
-            total_cost_value = float(total_cost)
-            st.text_input('Total Cost (₹)', value=total_cost, disabled=True)
+            total_ext_price = st.session_state['filtered_data']['Extended Price (₹)'].sum()
+            total_ext_price_value = float(total_ext_price)
+            st.text_input('Total Extended Price (₹)', value=total_ext_price, disabled=True)
 
         with toolmaintenance_col2:
             tool_maintenance_rate = st.text_input('Tool Maintenance Rate (%)', value="", disabled=False)
             tool_maintenance_rate_value = float(tool_maintenance_rate) / 100 if tool_maintenance_rate else 0.0
 
         with totalextendedprice_col3:
-            tool_maintenance_cost = total_cost_value * tool_maintenance_rate_value
-            total_extended_price = total_cost_value + tool_maintenance_cost
-            st.text_input('Total Extended Price (₹)', value=total_extended_price, disabled=True)
+            tool_maintenance_cost = total_ext_price_value * tool_maintenance_rate_value
+            tool_maintenance_cost_value = total_ext_price_value + tool_maintenance_cost
+            st.text_input('Total Cost (₹)', value=tool_maintenance_cost_value, disabled=True)
 
         with nreperunit_col4:
-            nre_per_unit = total_extended_price / product_volume if product_volume else 0
+            nre_per_unit = tool_maintenance_cost_value / product_volume if product_volume else 0
             st.text_input('NRE per Unit (₹)', value=nre_per_unit, disabled=True)
 
         # Provide inputs for file name, sheet name, and path
@@ -242,10 +242,10 @@ if new_analysis:
                     
                     # Add the additional fields in the first row
                     for col, value in zip(
-                        ['Annual Volume', 'Product Life', 'Product Volume', 'Total Cost (₹)', 'Tool Maintenance Rate (%)', 
-                        'Extended Price (₹)', 'NRE Per Unit ($)'],
-                        [annual_volume, product_life, product_volume, total_cost, tool_maintenance_rate_value, 
-                        total_extended_price, nre_per_unit]):
+                        ['Annual Volume', 'Product Life', 'Product Volume', 'Total Extended Price (₹)', 'Tool Maintenance Rate (%)', 
+                        'Total Cost (₹)', 'NRE Per Unit (₹)'],
+                        [annual_volume, product_life, product_volume, total_ext_price, tool_maintenance_rate_value, 
+                        tool_maintenance_cost_value, nre_per_unit]):
                         final_df.at[0, col] = value
                     final_df.to_excel(writer, sheet_name=sheet_name, index=False)
                 
@@ -364,7 +364,7 @@ if new_analysis:
                     with rtv_1_col:
                     # Input Fields
                         glue_wt_per_board = st.text_input('RTV Wt/Brd Est', value="", key="glue_wt_per_board")
-                        rtv_glue_cost = st.text_input('RTV Cost/ml', value="0.052", key="rtv_glue_cost", disabled=True)
+                        rtv_glue_cost = st.text_input('RTV Cost/ml', value="4.472", key="rtv_glue_cost", disabled=True)
                     
                     with rtv_2_col:
                         wastage_percentage_per_board = st.text_input('RTV Wastage %', value="", key="wastage_percentage_per_board")
@@ -413,7 +413,7 @@ if new_analysis:
                     with sp_sg_col:
                         paste_specific_gravity = st.text_input('Solder Paste SG (g/cc)', value="7.31", key="paste_specific_gravity", disabled=True)
                     with sp_cost_col:
-                        cost_of_solder_paste = st.text_input('Solder Paste Cost($/g)', value="0.065", key="cost_of_solder_paste", disabled=True)
+                        cost_of_solder_paste = st.text_input('Solder Paste Cost(₹/g)', value="5.59", key="cost_of_solder_paste", disabled=True)
 
                     sp_top_col1, sp_bot_col2 = st.columns(2)
                     with sp_top_col1:
@@ -428,7 +428,7 @@ if new_analysis:
                         top_weight_estimate_percentage = float(top_weight_estimate_percentage) if top_weight_estimate_percentage else 0.0
                         top_sp_wastage_percentage = float(top_sp_wastage_percentage) if top_sp_wastage_percentage else 0.0
                         paste_specific_gravity = float(paste_specific_gravity) if paste_specific_gravity else 7.31
-                        cost_of_solder_paste = float(cost_of_solder_paste) if cost_of_solder_paste else 0.065
+                        cost_of_solder_paste = float(cost_of_solder_paste) if cost_of_solder_paste else 5.59
                         solder_paste_thickness = float(solder_paste_thickness) if solder_paste_thickness else 0.0
 
                         # Calculate weight_of_solder_paste_for_100percentage_wt
@@ -456,7 +456,7 @@ if new_analysis:
                         # Display results
                         st.text_input('Top SP Wt (100%)(g)', value=f"{weight_of_solder_paste_for_100percentage_wt_value:.2f}", key="weight_of_solder_paste_for_100percentage_wt", disabled=True)
                         st.text_input('Top SP Wt Estimate(g)', value=f"{top_weight_of_solder_paste_for_wt_estimate_value:.2f}", key="top_solder_paste_weight_estimate", disabled=True)
-                        st.text_input('Top SP Cost/Brd($)', value=f"{top_side_cost_per_board_value:.2f}", key="top_side_cost_per_board", disabled=True)                # Solder Paste - Bottom
+                        st.text_input('Top SP Cost/Brd(₹)', value=f"{top_side_cost_per_board_value:.2f}", key="top_side_cost_per_board", disabled=True)                # Solder Paste - Bottom
 
 
                 # Solder Paste - Bottom
@@ -500,7 +500,7 @@ if new_analysis:
                         # Display results
                         st.text_input('Bot SP Wt (100%)(g)', value=f"{bot_weight_of_solder_paste_for_100percentage_wt_value:.2f}", key="bot_weight_of_solder_paste_for_100percentage_wt_value", disabled=True)
                         st.text_input('Bot SP Wt Estimate(g)', value=f"{bot_weight_of_solder_paste_for_wt_estimate_value:.2f}", key="bot_solder_paste_weight_estimate", disabled=True)
-                        st.text_input('Bot SP Cost/Brd($)', value=f"{bot_side_cost_per_board_value:.2f}", key="bot_side_cost_per_board", disabled=True)
+                        st.text_input('Bot SP Cost/Brd(₹)', value=f"{bot_side_cost_per_board_value:.2f}", key="bot_side_cost_per_board", disabled=True)
 
                 # Flux Wave Soldering
                 with rtv_col:
@@ -511,12 +511,12 @@ if new_analysis:
                     with rtv_3_col:
                         flux_wastage_percentage = st.text_input('Flux Wastage %', value="", key="flux_wastage_percentage")
                     with rtv_4_col:
-                        flux_cost = st.text_input('Flux Cost($/ml)', value="0.0055", key="flux_cost", disabled=True)
+                        flux_cost = st.text_input('Flux Cost(₹/ml)', value="0.473", key="flux_cost", disabled=True)
 
                     try:
                         # Safely convert inputs to float
                         flux_wastage_percentage = float(flux_wastage_percentage) if flux_wastage_percentage else 0.0
-                        flux_cost = float(flux_cost) if flux_cost else 0.0055
+                        flux_cost = float(flux_cost) if flux_cost else 0.473
 
                         # Compute flux_board_area
                         flux_board_area_value = board_length * board_width
@@ -536,7 +536,7 @@ if new_analysis:
                     with rtv_4_col:
                         st.text_input('Flux Spray Area(mm^2)', value=f"{flux_spread_area_value:.2f}", key="flux_spread_area", disabled=True)
                     flux_cost_per_board_value = flux_spread_area_value * flux_cost
-                    flux_cost_per_board = st.text_input('Flux Cost Per Board($)', value=flux_cost_per_board_value, key="flux_cost_per_board", disabled=True)
+                    flux_cost_per_board = st.text_input('Flux Cost Per Board(₹)', value=flux_cost_per_board_value, key="flux_cost_per_board", disabled=True)
 
                 # Solder bar
                 with solder_bar_col:
@@ -580,7 +580,7 @@ if new_analysis:
                         barrel_joints = st.text_input('Barrel Joints', value="", key="barrel_joints", disabled=False)
                         barrel_solder_thick = st.text_input('Barrel Solder Thick(mm)', value="", key="barrel_solder_thick", disabled=False)
 
-                    solder_bar_cost_value = 0.024
+                    solder_bar_cost_value = 2.064
 
                     try:
                         # Safely convert inputs to float
@@ -618,8 +618,8 @@ if new_analysis:
                     with barrel2_col:  
                         st.subheader("")                    
                         st.text_input('Total Solder Wt(g)', value=f"{circumferential_plus_barrel_fill_solder_wt:.2f}", key="circumferential_plus_barrel_fill_solder_wt", disabled=True) 
-                        solder_bar_cost = st.text_input('Solder Bar Cost($/g)', value=solder_bar_cost_value, key="solder_bar_cost", disabled=True)
-                        st.text_input('Solder Bar Cost/Brd($)', value=f"{solderbar_cost_per_brd:.2f}", key="solderbar_cost_per_brd", disabled=True) 
+                        solder_bar_cost = st.text_input('Solder Bar Cost(₹/g)', value=solder_bar_cost_value, key="solder_bar_cost", disabled=True)
+                        st.text_input('Solder Bar Cost/Brd(₹)', value=f"{solderbar_cost_per_brd:.2f}", key="solderbar_cost_per_brd", disabled=True) 
 
                     cost_consumables_value = (rtv_cost_per_board + top_side_cost_per_board_value + bot_side_cost_per_board_value + flux_cost_per_board_value + solderbar_cost_per_brd)
 
@@ -630,12 +630,12 @@ if new_analysis:
                 
                 with input_cost_col:
                     st.subheader("Input Cost")
-                    cost_pcb = st.text_input('PCB ($)', value="", key="cost_pcb")
-                    cost_electronics_components = st.text_input('Electronics Component ($)', value="", key="cost_electronics_components")
-                    cost_mech_components = st.text_input('Mechanical Component ($)', value="", key="cost_mech_components")
-                    cost_nre = st.text_input('NRE ($)', value=nre_per_unit, key="cost_nre", disabled=True)
+                    cost_pcb = st.text_input('PCB (₹)', value="", key="cost_pcb")
+                    cost_electronics_components = st.text_input('Electronics Component (₹)', value="", key="cost_electronics_components")
+                    cost_mech_components = st.text_input('Mechanical Component (₹)', value="", key="cost_mech_components")
+                    cost_nre = st.text_input('NRE (₹)', value=nre_per_unit, key="cost_nre", disabled=True)
                     # cost_consumables_value = (rtv_cost_per_board + top_side_cost_per_board_value + bot_side_cost_per_board_value + flux_cost_per_board_value + solderbar_cost_per_brd)
-                    cost_consumables = st.text_input('Consumables ($)', value=cost_consumables_value, key="cost_consumables", disabled=True)
+                    cost_consumables = st.text_input('Consumables (₹)', value=cost_consumables_value, key="cost_consumables", disabled=True)
                     # Safely convert inputs to float
                     try:
                         cost_pcb = float(cost_pcb) if cost_pcb else 0.0
@@ -712,30 +712,30 @@ if new_analysis:
                     ohpandother_cost_col1, ohpandother_cost_col2 = st.columns(2)
 
                     with ohpandother_cost_col1:
-                        st.text_input("MOH ($)", value=f"{moh_cost_value:.2f}", disabled=True)
-                        st.text_input("Profit on RM ($)", value=f"{profit_on_rm_cost_value:.2f}", disabled=True)
-                        st.text_input("Material Cost ($)", value=f"{total_material_cost_value:.2f}", disabled=True)
-                        st.text_input("OH&P ($)", value=f"{total_ohp_cost_value:.2f}", disabled=True)
-                        st.text_input("Warranty ($)", value=f"{warranty_cost_value:.2f}", disabled=True)
+                        st.text_input("MOH (₹)", value=f"{moh_cost_value:.2f}", disabled=True)
+                        st.text_input("Profit on RM (₹)", value=f"{profit_on_rm_cost_value:.2f}", disabled=True)
+                        st.text_input("Material Cost (₹)", value=f"{total_material_cost_value:.2f}", disabled=True)
+                        st.text_input("OH&P (₹)", value=f"{total_ohp_cost_value:.2f}", disabled=True)
+                        st.text_input("Warranty (₹)", value=f"{warranty_cost_value:.2f}", disabled=True)
                     with ohpandother_cost_col2:
-                        st.text_input("FOH ($)", value=f"{foh_cost_value:.2f}", disabled=True)
-                        st.text_input("Profit on VA ($)", value=f"{profit_on_va_cost_value:.2f}", disabled=True)
-                        st.text_input("Manufacturing Cost ($)", value=f"{total_manufacturing_cost_value:.2f}", disabled=True)
-                        st.text_input("R&D ($)", value=f"{r_n_d_cost_value:.2f}", disabled=True)
-                        st.text_input("SG&A ($)", value=f"{sg_and_a_cost_value:.2f}", disabled=True)
+                        st.text_input("FOH (₹)", value=f"{foh_cost_value:.2f}", disabled=True)
+                        st.text_input("Profit on VA (₹)", value=f"{profit_on_va_cost_value:.2f}", disabled=True)
+                        st.text_input("Manufacturing Cost (₹)", value=f"{total_manufacturing_cost_value:.2f}", disabled=True)
+                        st.text_input("R&D (₹)", value=f"{r_n_d_cost_value:.2f}", disabled=True)
+                        st.text_input("SG&A (₹)", value=f"{sg_and_a_cost_value:.2f}", disabled=True)
 
                 with placeholder2_col:
                     st.subheader("Cost Summary")
                     grand_total_cost_value = ((total_material_cost_value + total_manufacturing_cost_value) + moh_cost_value + 
                                                     foh_cost_value + profit_on_rm_cost_value + profit_on_va_cost_value +
                                                     r_n_d_cost_value + warranty_cost_value + sg_and_a_cost_value )
-                    st.text_input('Total Cost ($)', value=grand_total_cost_value, disabled=True)
+                    st.text_input('Total Cost (₹)', value=grand_total_cost_value, disabled=True)
 
                     rm_cost_value = total_material_cost_value
-                    st.text_input('RM Cost ($)', value=rm_cost_value, disabled=True)
+                    st.text_input('RM Cost (₹)', value=rm_cost_value, disabled=True)
 
                     conversion_cost_value = grand_total_cost_value - total_material_cost_value
-                    st.text_input('Conversion Cost ($)', value=conversion_cost_value, disabled=True)
+                    st.text_input('Conversion Cost (₹)', value=conversion_cost_value, disabled=True)
 
                     if st.button("Save Consumable, RM & Conversion Costing Details"):
                         if sheet_name in st.session_state.edited_sheets:
@@ -745,15 +745,15 @@ if new_analysis:
                             # Add new columns if they don't exist
                             columns_to_add = [
                                 'RTV Wt/Brd Est','RTV Wastage %','RTV Cost/ml','RTV Solder SG','Wt per Board (Incl Wastage %)','RTV Cost Per Board', #RTV Glue section
-                                "Board Length(mm)","Board Width(mm)","Top Wt Estimate %","Top Wastage %","Solder Paste SG (g/cc)","Solder Paste Cost($/g)","Top SP Thick(mm)","Top SP Wt (100%)(g)", "Top SP Wt Estimate(g)","Top SP Cost/Brd($)", #Solder Paste - Top section
-                                "Bot Wt Estimate %","Bot Wastage %","Bot SP Thick(mm)","Bot SP Wt (100%)(g)","Bot SP Wt Estimate(g)","Bot SP Cost/Brd($)",  #Solder Paste - Bottom section
-                                "Flux Wastage %","Flux Cost($/ml)","Flux Area/Brd(mm^2)","Flux Spray Area(mm^2)","Flux Cost Per Board($)", #Flux Wave Soldering section
+                                "Board Length(mm)","Board Width(mm)","Top Wt Estimate %","Top Wastage %","Solder Paste SG (g/cc)","Solder Paste Cost(₹/g)","Top SP Thick(mm)","Top SP Wt (100%)(g)", "Top SP Wt Estimate(g)","Top SP Cost/Brd(₹)", #Solder Paste - Top section
+                                "Bot Wt Estimate %","Bot Wastage %","Bot SP Thick(mm)","Bot SP Wt (100%)(g)","Bot SP Wt Estimate(g)","Bot SP Cost/Brd(₹)",  #Solder Paste - Bottom section
+                                "Flux Wastage %","Flux Cost(₹/ml)","Flux Area/Brd(mm^2)","Flux Spray Area(mm^2)","Flux Cost Per Board(₹)", #Flux Wave Soldering section
                                 "Pad OD (mm)","Pad ID (mm)","Solder Joints","Solder Thick (mm)","Solder Vol(mm^3)","Solder Wt/Joint(g)","Solder Wt/Brd(g)", # Circumferential Fill Solder Bar
-                                "Barrel Dia(mm)","Board Thick(mm)","Barrel Joints","Barrel Solder Thick(mm)","Solder Bar Cost($/g)","Barrel Solder Vol(mm^3)","Barrel Solder Wt/Joint(g)","Barrel Solder Wt/Brd(g)","Solder Bar Cost($/g)","Total Solder Wt(g)","Solder Bar Cost/Brd($)", # Barrel Fill Solder Bar
-                                "PCB ($)","Electronics Component ($)","Mechanical Component ($)","NRE ($)","Consumables ($)", #Input Cost section
+                                "Barrel Dia(mm)","Board Thick(mm)","Barrel Joints","Barrel Solder Thick(mm)","Solder Bar Cost(₹/g)","Barrel Solder Vol(mm^3)","Barrel Solder Wt/Joint(g)","Barrel Solder Wt/Brd(g)","Solder Bar Cost(₹/g)","Total Solder Wt(g)","Solder Bar Cost/Brd(₹)", # Barrel Fill Solder Bar
+                                "PCB (₹)","Electronics Component (₹)","Mechanical Component (₹)","NRE (₹)","Consumables (₹)", #Input Cost section
                                 "Select Annual Volume","MOH %","FOH %","Profit on RM %","Profit on VA %","R&D %","Warranty %","SG&A %", #OHP% Model Vs. Ann. Volume section
-                                "MOH ($)","Profit on RM ($)","FOH ($)","Profit on VA ($)","Material Cost ($)","Manufacturing Cost ($)","OH&P ($)","R&D ($)","Warranty ($)","SG&A ($)", #Cost Computation section
-                                "Total Cost ($)","RM Cost ($)","Conversion Cost ($)" # Cost Summary section
+                                "MOH (₹)","Profit on RM (₹)","FOH (₹)","Profit on VA (₹)","Material Cost (₹)","Manufacturing Cost (₹)","OH&P (₹)","R&D (₹)","Warranty (₹)","SG&A (₹)", #Cost Computation section
+                                "Total Cost (₹)","RM Cost (₹)","Conversion Cost (₹)" # Cost Summary section
                             ]
                             for column in columns_to_add:
                                 if column not in current_data.columns:
@@ -771,22 +771,22 @@ if new_analysis:
                             current_data.loc[0, "Top Wt Estimate %"] = top_weight_estimate_percentage
                             current_data.loc[0, "Top Wastage %"] = top_sp_wastage_percentage
                             current_data.loc[0, "Solder Paste SG (g/cc)"] = paste_specific_gravity
-                            current_data.loc[0, "Solder Paste Cost($/g)"] = cost_of_solder_paste
+                            current_data.loc[0, "Solder Paste Cost(₹/g)"] = cost_of_solder_paste
                             current_data.loc[0, "Top SP Thick(mm)"] = solder_paste_thickness
                             current_data.loc[0, "Top SP Wt (100%)(g)"] = weight_of_solder_paste_for_100percentage_wt_value
                             current_data.loc[0, "Top SP Wt Estimate(g)"] = top_weight_of_solder_paste_for_wt_estimate_value
-                            current_data.loc[0, "Top SP Cost/Brd($)"] = top_side_cost_per_board_value
+                            current_data.loc[0, "Top SP Cost/Brd(₹)"] = top_side_cost_per_board_value
                             current_data.loc[0, "Bot Wt Estimate %"] = bot_weight_estimate_percentage
                             current_data.loc[0, "Bot Wastage %"] = bot_sp_wastage_percentage
                             current_data.loc[0, "Bot SP Thick(mm)"] = bot_solder_paste_thickness
                             current_data.loc[0, "Bot SP Wt (100%)(g)"] = bot_weight_of_solder_paste_for_100percentage_wt_value
                             current_data.loc[0, "Bot SP Wt Estimate(g)"] = bot_weight_of_solder_paste_for_wt_estimate_value
-                            current_data.loc[0, "Bot SP Cost/Brd($)"] = bot_side_cost_per_board_value
+                            current_data.loc[0, "Bot SP Cost/Brd(₹)"] = bot_side_cost_per_board_value
                             current_data.loc[0, "Flux Wastage %"] = flux_wastage_percentage
-                            current_data.loc[0, "Flux Cost($/ml)"] = flux_cost
+                            current_data.loc[0, "Flux Cost(₹/ml)"] = flux_cost
                             current_data.loc[0, "Flux Area/Brd(mm^2)"] = flux_board_area_value
                             current_data.loc[0, "Flux Spray Area(mm^2)"] = flux_spread_area_value
-                            current_data.loc[0, "Flux Cost Per Board($)"] = flux_cost_per_board
+                            current_data.loc[0, "Flux Cost Per Board(₹)"] = flux_cost_per_board
                             current_data.loc[0, "Pad OD (mm)"] = outer_dia_of_pad
                             current_data.loc[0, "Pad ID (mm)"] = inner_dia_of_pad
                             current_data.loc[0, "Solder Joints"] = no_of_solder_joints
@@ -798,18 +798,18 @@ if new_analysis:
                             current_data.loc[0, "Board Thick(mm)"] = board_thick
                             current_data.loc[0, "Barrel Joints"] = barrel_joints
                             current_data.loc[0, "Barrel Solder Thick(mm)"] = barrel_solder_thick
-                            current_data.loc[0, "Solder Bar Cost($/g)"] = solder_bar_cost_value
+                            current_data.loc[0, "Solder Bar Cost(₹/g)"] = solder_bar_cost_value
                             current_data.loc[0, "Barrel Solder Vol(mm^3)"] = barrel_solder_vol
                             current_data.loc[0, "Barrel Solder Wt/Joint(g)"] = barrel_solder_wt_per_joint
                             current_data.loc[0, "Barrel Solder Wt/Brd(g)"] = barrel_solder_wt_per_board
-                            current_data.loc[0, "Solder Bar Cost($/g)"] = solder_bar_cost
+                            current_data.loc[0, "Solder Bar Cost(₹/g)"] = solder_bar_cost
                             current_data.loc[0, "Total Solder Wt(g)"] = circumferential_plus_barrel_fill_solder_wt
-                            current_data.loc[0, "Solder Bar Cost/Brd($)"] = solderbar_cost_per_brd
-                            current_data.loc[0, "PCB ($)"] = cost_pcb
-                            current_data.loc[0, "Electronics Component ($)"] = cost_electronics_components
-                            current_data.loc[0, "Mechanical Component ($)"] = cost_mech_components
-                            current_data.loc[0, "NRE ($)"] = cost_nre
-                            current_data.loc[0, "Consumables ($)"] = cost_consumables
+                            current_data.loc[0, "Solder Bar Cost/Brd(₹)"] = solderbar_cost_per_brd
+                            current_data.loc[0, "PCB (₹)"] = cost_pcb
+                            current_data.loc[0, "Electronics Component (₹)"] = cost_electronics_components
+                            current_data.loc[0, "Mechanical Component (₹)"] = cost_mech_components
+                            current_data.loc[0, "NRE (₹)"] = cost_nre
+                            current_data.loc[0, "Consumables (₹)"] = cost_consumables
                             current_data.loc[0, "Select Annual Volume"] = annual_volume
 
                             # Update the values in `edited_data` (current_data) for these headers
@@ -820,19 +820,19 @@ if new_analysis:
                                 except ValueError:
                                     st.warning(f"Invalid value for {label}. Please check the input.")
 
-                            current_data.loc[0, "MOH ($)"] = moh_cost_value
-                            current_data.loc[0, "FOH ($)"] = foh_cost_value
-                            current_data.loc[0, "Profit on RM ($)"] = profit_on_rm_cost_value
-                            current_data.loc[0, "Profit on VA ($)"] = profit_on_va_cost_value
-                            current_data.loc[0, "Material Cost ($)"] = total_material_cost_value
-                            current_data.loc[0, "Manufacturing Cost ($)"] = total_manufacturing_cost_value
-                            current_data.loc[0, "OH&P ($)"] = total_ohp_cost_value
-                            current_data.loc[0, "R&D ($)"] = r_n_d_cost_value
-                            current_data.loc[0, "Warranty ($)"] = warranty_cost_value
-                            current_data.loc[0, "SG&A ($)"] = sg_and_a_cost_value
-                            current_data.loc[0, "Total Cost ($)"] = grand_total_cost_value
-                            current_data.loc[0, "RM Cost ($)"] = rm_cost_value
-                            current_data.loc[0, "Conversion Cost ($)"] = conversion_cost_value
+                            current_data.loc[0, "MOH (₹)"] = moh_cost_value
+                            current_data.loc[0, "FOH (₹)"] = foh_cost_value
+                            current_data.loc[0, "Profit on RM (₹)"] = profit_on_rm_cost_value
+                            current_data.loc[0, "Profit on VA (₹)"] = profit_on_va_cost_value
+                            current_data.loc[0, "Material Cost (₹)"] = total_material_cost_value
+                            current_data.loc[0, "Manufacturing Cost (₹)"] = total_manufacturing_cost_value
+                            current_data.loc[0, "OH&P (₹)"] = total_ohp_cost_value
+                            current_data.loc[0, "R&D (₹)"] = r_n_d_cost_value
+                            current_data.loc[0, "Warranty (₹)"] = warranty_cost_value
+                            current_data.loc[0, "SG&A (₹)"] = sg_and_a_cost_value
+                            current_data.loc[0, "Total Cost (₹)"] = grand_total_cost_value
+                            current_data.loc[0, "RM Cost (₹)"] = rm_cost_value
+                            current_data.loc[0, "Conversion Cost (₹)"] = conversion_cost_value
 
                         if sheet_name:  # Check if the sheet_name is not empty
                             # Update the session state
@@ -897,13 +897,13 @@ if new_analysis:
                 # Horizontal Bar Chart 
                 data = {
                     "Cost Component": [
-                        "Material Cost ($)",
-                        "Manufacturing Cost ($)",
-                        "OH&P ($)",
-                        "R&D ($)",
-                        "Warranty ($)",
-                        "SG&A ($)",
-                        "Total Cost ($)"
+                        "Material Cost (₹)",
+                        "Manufacturing Cost (₹)",
+                        "OH&P (₹)",
+                        "R&D (₹)",
+                        "Warranty (₹)",
+                        "SG&A (₹)",
+                        "Total Cost (₹)"
                     ],
                     "Amount": [
                         total_material_cost_value,
@@ -931,7 +931,7 @@ if new_analysis:
                 )
 
                 fig.update_traces(texttemplate='%{text:.2f}', textposition='outside')
-                fig.update_layout(xaxis_title="Cost Amount ($)", 
+                fig.update_layout(xaxis_title="Cost Amount (₹)", 
                                     height=600,  # Adjust height as needed
                                     width=800,   # Adjust width as needed
                                     margin=dict(t=50, b=50, l=50, r=50),  # Adjust margins as needed
@@ -1032,7 +1032,7 @@ if existing_analysis:
         with rtv_1_col:
         # Input Fields
             glue_wt_per_board = st.text_input('RTV Wt/Brd Est', value="", key="glue_wt_per_board")
-            rtv_glue_cost = st.text_input('RTV Cost/ml', value="0.052", key="rtv_glue_cost", disabled=True)
+            rtv_glue_cost = st.text_input('RTV Cost/ml', value="4.472", key="rtv_glue_cost", disabled=True)
         
         with rtv_2_col:
             wastage_percentage_per_board = st.text_input('RTV Wastage %', value="", key="wastage_percentage_per_board")
@@ -1081,7 +1081,7 @@ if existing_analysis:
         with sp_sg_col:
             paste_specific_gravity = st.text_input('Solder Paste SG (g/cc)', value="7.31", key="paste_specific_gravity", disabled=True)
         with sp_cost_col:
-            cost_of_solder_paste = st.text_input('Solder Paste Cost($/g)', value="0.065", key="cost_of_solder_paste", disabled=True)
+            cost_of_solder_paste = st.text_input('Solder Paste Cost(₹/g)', value="5.59", key="cost_of_solder_paste", disabled=True)
 
         sp_top_col1, sp_bot_col2 = st.columns(2)
         with sp_top_col1:
@@ -1096,7 +1096,7 @@ if existing_analysis:
             top_weight_estimate_percentage = float(top_weight_estimate_percentage) if top_weight_estimate_percentage else 0.0
             top_sp_wastage_percentage = float(top_sp_wastage_percentage) if top_sp_wastage_percentage else 0.0
             paste_specific_gravity = float(paste_specific_gravity) if paste_specific_gravity else 7.31
-            cost_of_solder_paste = float(cost_of_solder_paste) if cost_of_solder_paste else 0.065
+            cost_of_solder_paste = float(cost_of_solder_paste) if cost_of_solder_paste else 5.59
             solder_paste_thickness = float(solder_paste_thickness) if solder_paste_thickness else 0.0
 
             # Calculate weight_of_solder_paste_for_100percentage_wt
@@ -1124,7 +1124,7 @@ if existing_analysis:
             # Display results
             st.text_input('Top SP Wt (100%)(g)', value=f"{weight_of_solder_paste_for_100percentage_wt_value:.2f}", key="weight_of_solder_paste_for_100percentage_wt", disabled=True)
             st.text_input('Top SP Wt Estimate(g)', value=f"{top_weight_of_solder_paste_for_wt_estimate_value:.2f}", key="top_solder_paste_weight_estimate", disabled=True)
-            st.text_input('Top SP Cost/Brd($)', value=f"{top_side_cost_per_board_value:.2f}", key="top_side_cost_per_board", disabled=True)                # Solder Paste - Bottom
+            st.text_input('Top SP Cost/Brd(₹)', value=f"{top_side_cost_per_board_value:.2f}", key="top_side_cost_per_board", disabled=True)                # Solder Paste - Bottom
 
 
     # Solder Paste - Bottom
@@ -1168,7 +1168,7 @@ if existing_analysis:
             # Display results
             st.text_input('Bot SP Wt (100%)(g)', value=f"{bot_weight_of_solder_paste_for_100percentage_wt_value:.2f}", key="bot_weight_of_solder_paste_for_100percentage_wt_value", disabled=True)
             st.text_input('Bot SP Wt Estimate(g)', value=f"{bot_weight_of_solder_paste_for_wt_estimate_value:.2f}", key="bot_solder_paste_weight_estimate", disabled=True)
-            st.text_input('Bot SP Cost/Brd($)', value=f"{bot_side_cost_per_board_value:.2f}", key="bot_side_cost_per_board", disabled=True)
+            st.text_input('Bot SP Cost/Brd(₹)', value=f"{bot_side_cost_per_board_value:.2f}", key="bot_side_cost_per_board", disabled=True)
 
     # Flux Wave Soldering
     with rtv_col:
@@ -1179,12 +1179,12 @@ if existing_analysis:
         with rtv_3_col:
             flux_wastage_percentage = st.text_input('Flux Wastage %', value="", key="flux_wastage_percentage")
         with rtv_4_col:
-            flux_cost = st.text_input('Flux Cost($/ml)', value="0.0055", key="flux_cost", disabled=True)
+            flux_cost = st.text_input('Flux Cost(₹/ml)', value="0.473", key="flux_cost", disabled=True)
 
         try:
             # Safely convert inputs to float
             flux_wastage_percentage = float(flux_wastage_percentage) if flux_wastage_percentage else 0.0
-            flux_cost = float(flux_cost) if flux_cost else 0.0055
+            flux_cost = float(flux_cost) if flux_cost else 0.473
 
             # Compute flux_board_area
             flux_board_area_value = board_length * board_width
@@ -1204,7 +1204,7 @@ if existing_analysis:
         with rtv_4_col:
             st.text_input('Flux Spray Area(mm^2)', value=f"{flux_spread_area_value:.2f}", key="flux_spread_area", disabled=True)
         flux_cost_per_board_value = flux_spread_area_value * flux_cost
-        flux_cost_per_board = st.text_input('Flux Cost Per Board($)', value=flux_cost_per_board_value, key="flux_cost_per_board", disabled=True)
+        flux_cost_per_board = st.text_input('Flux Cost Per Board(₹)', value=flux_cost_per_board_value, key="flux_cost_per_board", disabled=True)
 
     # Solder bar
     with solder_bar_col:
@@ -1248,7 +1248,7 @@ if existing_analysis:
             barrel_joints = st.text_input('Barrel Joints', value="", key="barrel_joints", disabled=False)
             barrel_solder_thick = st.text_input('Barrel Solder Thick(mm)', value="", key="barrel_solder_thick", disabled=False)
 
-        solder_bar_cost_value = 0.024
+        solder_bar_cost_value = 2.064
 
         try:
             # Safely convert inputs to float
@@ -1286,10 +1286,10 @@ if existing_analysis:
         with barrel2_col:  
             st.subheader("")                    
             st.text_input('Total Solder Wt(g)', value=f"{circumferential_plus_barrel_fill_solder_wt:.2f}", key="circumferential_plus_barrel_fill_solder_wt", disabled=True) 
-            solder_bar_cost = st.text_input('Solder Bar Cost($/g)', value=solder_bar_cost_value, key="solder_bar_cost", disabled=True)
-            st.text_input('Solder Bar Cost/Brd($)', value=f"{solderbar_cost_per_brd:.2f}", key="solderbar_cost_per_brd", disabled=True) 
+            solder_bar_cost = st.text_input('Solder Bar Cost(₹/g)', value=solder_bar_cost_value, key="solder_bar_cost", disabled=True)
+            st.text_input('Solder Bar Cost/Brd(₹)', value=f"{solderbar_cost_per_brd:.2f}", key="solderbar_cost_per_brd", disabled=True) 
 
-        nre_per_unit = nre_selected_data.at[0, "NRE Per Unit ($)"]
+        nre_per_unit = nre_selected_data.at[0, "NRE Per Unit (₹)"]
 
 
     st.header("RM & Conversion Cost Summary")                
@@ -1298,12 +1298,12 @@ if existing_analysis:
     
     with input_cost_col:
         st.subheader("Input Cost")
-        cost_pcb = st.text_input('PCB ($)', value="", key="cost_pcb")
-        cost_electronics_components = st.text_input('Electronics Component ($)', value="", key="cost_electronics_components")
-        cost_mech_components = st.text_input('Mechanical Component ($)', value="", key="cost_mech_components")
-        cost_nre = st.text_input('NRE ($)', value=nre_per_unit, key="cost_nre", disabled=True)
+        cost_pcb = st.text_input('PCB (₹)', value="", key="cost_pcb")
+        cost_electronics_components = st.text_input('Electronics Component (₹)', value="", key="cost_electronics_components")
+        cost_mech_components = st.text_input('Mechanical Component (₹)', value="", key="cost_mech_components")
+        cost_nre = st.text_input('NRE (₹)', value=nre_per_unit, key="cost_nre", disabled=True)
         cost_consumables_value = (rtv_cost_per_board + top_side_cost_per_board_value + bot_side_cost_per_board_value + flux_cost_per_board_value)
-        cost_consumables = st.text_input('Consumables ($)', value=cost_consumables_value, key="cost_consumables", disabled=True)
+        cost_consumables = st.text_input('Consumables (₹)', value=cost_consumables_value, key="cost_consumables", disabled=True)
         # Safely convert inputs to float
         try:
             cost_pcb = float(cost_pcb) if cost_pcb else 0.0
@@ -1380,30 +1380,30 @@ if existing_analysis:
         ohpandother_cost_col1, ohpandother_cost_col2 = st.columns(2)
 
         with ohpandother_cost_col1:
-            st.text_input("MOH ($)", value=f"{moh_cost_value:.2f}", disabled=True)
-            st.text_input("Profit on RM ($)", value=f"{profit_on_rm_cost_value:.2f}", disabled=True)
-            st.text_input("Material Cost ($)", value=f"{total_material_cost_value:.2f}", disabled=True)
-            st.text_input("OH&P ($)", value=f"{total_ohp_cost_value:.2f}", disabled=True)
-            st.text_input("Warranty ($)", value=f"{warranty_cost_value:.2f}", disabled=True)
+            st.text_input("MOH (₹)", value=f"{moh_cost_value:.2f}", disabled=True)
+            st.text_input("Profit on RM (₹)", value=f"{profit_on_rm_cost_value:.2f}", disabled=True)
+            st.text_input("Material Cost (₹)", value=f"{total_material_cost_value:.2f}", disabled=True)
+            st.text_input("OH&P (₹)", value=f"{total_ohp_cost_value:.2f}", disabled=True)
+            st.text_input("Warranty (₹)", value=f"{warranty_cost_value:.2f}", disabled=True)
         with ohpandother_cost_col2:
-            st.text_input("FOH ($)", value=f"{foh_cost_value:.2f}", disabled=True)
-            st.text_input("Profit on VA ($)", value=f"{profit_on_va_cost_value:.2f}", disabled=True)
-            st.text_input("Manufacturing Cost ($)", value=f"{total_manufacturing_cost_value:.2f}", disabled=True)
-            st.text_input("R&D ($)", value=f"{r_n_d_cost_value:.2f}", disabled=True)
-            st.text_input("SG&A ($)", value=f"{sg_and_a_cost_value:.2f}", disabled=True)
+            st.text_input("FOH (₹)", value=f"{foh_cost_value:.2f}", disabled=True)
+            st.text_input("Profit on VA (₹)", value=f"{profit_on_va_cost_value:.2f}", disabled=True)
+            st.text_input("Manufacturing Cost (₹)", value=f"{total_manufacturing_cost_value:.2f}", disabled=True)
+            st.text_input("R&D (₹)", value=f"{r_n_d_cost_value:.2f}", disabled=True)
+            st.text_input("SG&A (₹)", value=f"{sg_and_a_cost_value:.2f}", disabled=True)
 
     with placeholder2_col:
         st.subheader("Cost Summary")
         grand_total_cost_value = ((total_material_cost_value + total_manufacturing_cost_value) + moh_cost_value + 
                                         foh_cost_value + profit_on_rm_cost_value + profit_on_va_cost_value +
                                         r_n_d_cost_value + warranty_cost_value + sg_and_a_cost_value )
-        st.text_input('Total Cost ($)', value=grand_total_cost_value, disabled=True)
+        st.text_input('Total Cost (₹)', value=grand_total_cost_value, disabled=True)
 
         rm_cost_value = total_material_cost_value
-        st.text_input('RM Cost ($)', value=rm_cost_value, disabled=True)
+        st.text_input('RM Cost (₹)', value=rm_cost_value, disabled=True)
 
         conversion_cost_value = grand_total_cost_value - total_material_cost_value
-        st.text_input('Conversion Cost ($)', value=conversion_cost_value, disabled=True)
+        st.text_input('Conversion Cost (₹)', value=conversion_cost_value, disabled=True)
 
         if st.button("Save Consumable, RM & Conversion Costing Details"):
             if sheet_name in st.session_state.edited_sheets:
@@ -1413,15 +1413,15 @@ if existing_analysis:
                 # Add new columns if they don't exist
                 columns_to_add = [
                     'RTV Wt/Brd Est','RTV Wastage %','RTV Cost/ml','RTV Solder SG','Wt per Board (Incl Wastage %)','RTV Cost Per Board', #RTV Glue section
-                    "Board Length(mm)","Board Width(mm)","Top Wt Estimate %","Top Wastage %","Solder Paste SG (g/cc)","Solder Paste Cost($/g)","Top SP Thick(mm)","Top SP Wt (100%)(g)", "Top SP Wt Estimate(g)","Top SP Cost/Brd($)", #Solder Paste - Top section
-                    "Bot Wt Estimate %","Bot Wastage %","Bot SP Thick(mm)","Bot SP Wt (100%)(g)","Bot SP Wt Estimate(g)","Bot SP Cost/Brd($)",  #Solder Paste - Bottom section
-                    "Flux Wastage %","Flux Cost($/ml)","Flux Area/Brd(mm^2)","Flux Spray Area(mm^2)","Flux Cost Per Board($)", #Flux Wave Soldering section
+                    "Board Length(mm)","Board Width(mm)","Top Wt Estimate %","Top Wastage %","Solder Paste SG (g/cc)","Solder Paste Cost(₹/g)","Top SP Thick(mm)","Top SP Wt (100%)(g)", "Top SP Wt Estimate(g)","Top SP Cost/Brd(₹)", #Solder Paste - Top section
+                    "Bot Wt Estimate %","Bot Wastage %","Bot SP Thick(mm)","Bot SP Wt (100%)(g)","Bot SP Wt Estimate(g)","Bot SP Cost/Brd(₹)",  #Solder Paste - Bottom section
+                    "Flux Wastage %","Flux Cost(₹/ml)","Flux Area/Brd(mm^2)","Flux Spray Area(mm^2)","Flux Cost Per Board(₹)", #Flux Wave Soldering section
                     "Pad OD (mm)","Pad ID (mm)","Solder Joints","Solder Thick (mm)","Solder Vol(mm^3)","Solder Wt/Joint(g)","Solder Wt/Brd(g)", # Circumferential Fill Solder Bar
-                    "Barrel Dia(mm)","Board Thick(mm)","Barrel Joints","Barrel Solder Thick(mm)","Solder Bar Cost($/g)","Barrel Solder Vol(mm^3)","Barrel Solder Wt/Joint(g)","Barrel Solder Wt/Brd(g)","Solder Bar Cost($/g)","Total Solder Wt(g)","Solder Bar Cost/Brd($)", # Barrel Fill Solder Bar
-                    "PCB ($)","Electronics Component ($)","Mechanical Component ($)","NRE ($)","Consumables ($)", #Input Cost section
+                    "Barrel Dia(mm)","Board Thick(mm)","Barrel Joints","Barrel Solder Thick(mm)","Solder Bar Cost(₹/g)","Barrel Solder Vol(mm^3)","Barrel Solder Wt/Joint(g)","Barrel Solder Wt/Brd(g)","Solder Bar Cost(₹/g)","Total Solder Wt(g)","Solder Bar Cost/Brd(₹)", # Barrel Fill Solder Bar
+                    "PCB (₹)","Electronics Component (₹)","Mechanical Component (₹)","NRE (₹)","Consumables (₹)", #Input Cost section
                     "Select Annual Volume","MOH %","FOH %","Profit on RM %","Profit on VA %","R&D %","Warranty %","SG&A %", #OHP% Model Vs. Ann. Volume section
-                    "MOH ($)","Profit on RM ($)","FOH ($)","Profit on VA ($)","Material Cost ($)","Manufacturing Cost ($)","OH&P ($)","R&D ($)","Warranty ($)","SG&A ($)", #Cost Computation section
-                    "Total Cost ($)","RM Cost ($)","Conversion Cost ($)" # Cost Summary section
+                    "MOH (₹)","Profit on RM (₹)","FOH (₹)","Profit on VA (₹)","Material Cost (₹)","Manufacturing Cost (₹)","OH&P (₹)","R&D (₹)","Warranty (₹)","SG&A (₹)", #Cost Computation section
+                    "Total Cost (₹)","RM Cost (₹)","Conversion Cost (₹)" # Cost Summary section
                 ]
                 for column in columns_to_add:
                     if column not in current_data.columns:
@@ -1439,22 +1439,22 @@ if existing_analysis:
                 current_data.loc[0, "Top Wt Estimate %"] = top_weight_estimate_percentage
                 current_data.loc[0, "Top Wastage %"] = top_sp_wastage_percentage
                 current_data.loc[0, "Solder Paste SG (g/cc)"] = paste_specific_gravity
-                current_data.loc[0, "Solder Paste Cost($/g)"] = cost_of_solder_paste
+                current_data.loc[0, "Solder Paste Cost(₹/g)"] = cost_of_solder_paste
                 current_data.loc[0, "Top SP Thick(mm)"] = solder_paste_thickness
                 current_data.loc[0, "Top SP Wt (100%)(g)"] = weight_of_solder_paste_for_100percentage_wt_value
                 current_data.loc[0, "Top SP Wt Estimate(g)"] = top_weight_of_solder_paste_for_wt_estimate_value
-                current_data.loc[0, "Top SP Cost/Brd($)"] = top_side_cost_per_board_value
+                current_data.loc[0, "Top SP Cost/Brd(₹)"] = top_side_cost_per_board_value
                 current_data.loc[0, "Bot Wt Estimate %"] = bot_weight_estimate_percentage
                 current_data.loc[0, "Bot Wastage %"] = bot_sp_wastage_percentage
                 current_data.loc[0, "Bot SP Thick(mm)"] = bot_solder_paste_thickness
                 current_data.loc[0, "Bot SP Wt (100%)(g)"] = bot_weight_of_solder_paste_for_100percentage_wt_value
                 current_data.loc[0, "Bot SP Wt Estimate(g)"] = bot_weight_of_solder_paste_for_wt_estimate_value
-                current_data.loc[0, "Bot SP Cost/Brd($)"] = bot_side_cost_per_board_value
+                current_data.loc[0, "Bot SP Cost/Brd(₹)"] = bot_side_cost_per_board_value
                 current_data.loc[0, "Flux Wastage %"] = flux_wastage_percentage
-                current_data.loc[0, "Flux Cost($/ml)"] = flux_cost
+                current_data.loc[0, "Flux Cost(₹/ml)"] = flux_cost
                 current_data.loc[0, "Flux Area/Brd(mm^2)"] = flux_board_area_value
                 current_data.loc[0, "Flux Spray Area(mm^2)"] = flux_spread_area_value
-                current_data.loc[0, "Flux Cost Per Board($)"] = flux_cost_per_board
+                current_data.loc[0, "Flux Cost Per Board(₹)"] = flux_cost_per_board
                 current_data.loc[0, "Pad OD (mm)"] = outer_dia_of_pad
                 current_data.loc[0, "Pad ID (mm)"] = inner_dia_of_pad
                 current_data.loc[0, "Solder Joints"] = no_of_solder_joints
@@ -1466,18 +1466,18 @@ if existing_analysis:
                 current_data.loc[0, "Board Thick(mm)"] = board_thick
                 current_data.loc[0, "Barrel Joints"] = barrel_joints
                 current_data.loc[0, "Barrel Solder Thick(mm)"] = barrel_solder_thick
-                current_data.loc[0, "Solder Bar Cost($/g)"] = solder_bar_cost_value
+                current_data.loc[0, "Solder Bar Cost(₹/g)"] = solder_bar_cost_value
                 current_data.loc[0, "Barrel Solder Vol(mm^3)"] = barrel_solder_vol
                 current_data.loc[0, "Barrel Solder Wt/Joint(g)"] = barrel_solder_wt_per_joint
                 current_data.loc[0, "Barrel Solder Wt/Brd(g)"] = barrel_solder_wt_per_board
-                current_data.loc[0, "Solder Bar Cost($/g)"] = solder_bar_cost
+                current_data.loc[0, "Solder Bar Cost(₹/g)"] = solder_bar_cost
                 current_data.loc[0, "Total Solder Wt(g)"] = circumferential_plus_barrel_fill_solder_wt
-                current_data.loc[0, "Solder Bar Cost/Brd($)"] = solderbar_cost_per_brd
-                current_data.loc[0, "PCB ($)"] = cost_pcb
-                current_data.loc[0, "Electronics Component ($)"] = cost_electronics_components
-                current_data.loc[0, "Mechanical Component ($)"] = cost_mech_components
-                current_data.loc[0, "NRE ($)"] = cost_nre
-                current_data.loc[0, "Consumables ($)"] = cost_consumables
+                current_data.loc[0, "Solder Bar Cost/Brd(₹)"] = solderbar_cost_per_brd
+                current_data.loc[0, "PCB (₹)"] = cost_pcb
+                current_data.loc[0, "Electronics Component (₹)"] = cost_electronics_components
+                current_data.loc[0, "Mechanical Component (₹)"] = cost_mech_components
+                current_data.loc[0, "NRE (₹)"] = cost_nre
+                current_data.loc[0, "Consumables (₹)"] = cost_consumables
                 current_data.loc[0, "Select Annual Volume"] = annual_volume
 
                 # Update the values in `edited_data` (current_data) for these headers
@@ -1488,19 +1488,19 @@ if existing_analysis:
                     except ValueError:
                         st.warning(f"Invalid value for {label}. Please check the input.")
 
-                current_data.loc[0, "MOH ($)"] = moh_cost_value
-                current_data.loc[0, "FOH ($)"] = foh_cost_value
-                current_data.loc[0, "Profit on RM ($)"] = profit_on_rm_cost_value
-                current_data.loc[0, "Profit on VA ($)"] = profit_on_va_cost_value
-                current_data.loc[0, "Material Cost ($)"] = total_material_cost_value
-                current_data.loc[0, "Manufacturing Cost ($)"] = total_manufacturing_cost_value
-                current_data.loc[0, "OH&P ($)"] = total_ohp_cost_value
-                current_data.loc[0, "R&D ($)"] = r_n_d_cost_value
-                current_data.loc[0, "Warranty ($)"] = warranty_cost_value
-                current_data.loc[0, "SG&A ($)"] = sg_and_a_cost_value
-                current_data.loc[0, "Total Cost ($)"] = grand_total_cost_value
-                current_data.loc[0, "RM Cost ($)"] = rm_cost_value
-                current_data.loc[0, "Conversion Cost ($)"] = conversion_cost_value
+                current_data.loc[0, "MOH (₹)"] = moh_cost_value
+                current_data.loc[0, "FOH (₹)"] = foh_cost_value
+                current_data.loc[0, "Profit on RM (₹)"] = profit_on_rm_cost_value
+                current_data.loc[0, "Profit on VA (₹)"] = profit_on_va_cost_value
+                current_data.loc[0, "Material Cost (₹)"] = total_material_cost_value
+                current_data.loc[0, "Manufacturing Cost (₹)"] = total_manufacturing_cost_value
+                current_data.loc[0, "OH&P (₹)"] = total_ohp_cost_value
+                current_data.loc[0, "R&D (₹)"] = r_n_d_cost_value
+                current_data.loc[0, "Warranty (₹)"] = warranty_cost_value
+                current_data.loc[0, "SG&A (₹)"] = sg_and_a_cost_value
+                current_data.loc[0, "Total Cost (₹)"] = grand_total_cost_value
+                current_data.loc[0, "RM Cost (₹)"] = rm_cost_value
+                current_data.loc[0, "Conversion Cost (₹)"] = conversion_cost_value
 
             if sheet_name:  # Check if the sheet_name is not empty
                 # Update the session state
@@ -1542,9 +1542,9 @@ if existing_analysis:
 
 
     # Data for the pie chart
-    rm_cost_value_from_edited_data2 = edited_data2.at[0, "RM Cost ($)"] # To take the contents from edited_data2 
-    conversion_cost_value_from_edited_data2 = edited_data2.at[0, "Conversion Cost ($)"]
-    labels = ["RM Cost ($)", "Conversion Cost ($)"]
+    rm_cost_value_from_edited_data2 = edited_data2.at[0, "RM Cost (₹)"] # To take the contents from edited_data2 
+    conversion_cost_value_from_edited_data2 = edited_data2.at[0, "Conversion Cost (₹)"]
+    labels = ["RM Cost (₹)", "Conversion Cost (₹)"]
     values = [rm_cost_value_from_edited_data2, conversion_cost_value_from_edited_data2]
 
     # Create the pie chart
@@ -1565,23 +1565,23 @@ if existing_analysis:
         st.plotly_chart(fig, use_container_width=True)
 
     # Horizontal Bar Chart 
-    total_material_cost_value_edited_data2 = edited_data2.at[0, "Material Cost ($)"] # To take the contents from edited_data2 
-    total_manufacturing_cost_value_edited_data2 = edited_data2.at[0, "Manufacturing Cost ($)"]
-    total_ohp_cost_value_edited_data2 = edited_data2.at[0, "OH&P ($)"]
-    r_n_d_cost_value_edited_data2 = edited_data2.at[0, "R&D ($)"]
-    warranty_cost_value_edited_data2 = edited_data2.at[0, "Warranty ($)"]
-    sg_and_a_cost_value_edited_data2 = edited_data2.at[0, "SG&A ($)"]
-    grand_total_cost_value_edited_data2 = edited_data2.at[0, "Total Cost ($)"]
+    total_material_cost_value_edited_data2 = edited_data2.at[0, "Material Cost (₹)"] # To take the contents from edited_data2 
+    total_manufacturing_cost_value_edited_data2 = edited_data2.at[0, "Manufacturing Cost (₹)"]
+    total_ohp_cost_value_edited_data2 = edited_data2.at[0, "OH&P (₹)"]
+    r_n_d_cost_value_edited_data2 = edited_data2.at[0, "R&D (₹)"]
+    warranty_cost_value_edited_data2 = edited_data2.at[0, "Warranty (₹)"]
+    sg_and_a_cost_value_edited_data2 = edited_data2.at[0, "SG&A (₹)"]
+    grand_total_cost_value_edited_data2 = edited_data2.at[0, "Total Cost (₹)"]
 
     data = {
         "Cost Component": [
-            "Material Cost ($)",
-            "Manufacturing Cost ($)",
-            "OH&P ($)",
-            "R&D ($)",
-            "Warranty ($)",
-            "SG&A ($)",
-            "Total Cost ($)"
+            "Material Cost (₹)",
+            "Manufacturing Cost (₹)",
+            "OH&P (₹)",
+            "R&D (₹)",
+            "Warranty (₹)",
+            "SG&A (₹)",
+            "Total Cost (₹)"
         ],
         "Amount": [
             total_material_cost_value_edited_data2,
@@ -1610,7 +1610,7 @@ if existing_analysis:
     )
 
     fig.update_traces(texttemplate='%{text:.2f}', textposition='outside')
-    fig.update_layout(xaxis_title="Cost Amount ($)", 
+    fig.update_layout(xaxis_title="Cost Amount (₹)", 
                         height=600,  # Adjust height as needed
                         width=800,   # Adjust width as needed
                         margin=dict(t=50, b=50, l=50, r=50),  # Adjust margins as needed
