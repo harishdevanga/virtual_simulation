@@ -578,7 +578,6 @@ if new_analysis:
                         barrel_dia = st.text_input('Barrel Dia(mm)', value="", key="barrel_dia", disabled=False)
                         board_thick = st.text_input('Board Thick(mm)', value="", key="board_thick", disabled=False)
                         barrel_joints = st.text_input('Barrel Joints', value="", key="barrel_joints", disabled=False)
-                        barrel_solder_thick = st.text_input('Barrel Solder Thick(mm)', value="", key="barrel_solder_thick", disabled=False)
 
                     solder_bar_cost_value = 2.064
 
@@ -587,16 +586,19 @@ if new_analysis:
                         barrel_dia = float(barrel_dia) if barrel_dia else 0.0
                         board_thick = float(board_thick) if board_thick else 0.0
                         barrel_joints = float(barrel_joints) if barrel_joints else 0.0
-                        barrel_solder_thick = float(barrel_solder_thick) if barrel_solder_thick else 0.0
+                        # barrel_solder_thick = float(barrel_solder_thick) if barrel_solder_thick else 0.0
                         solder_bar_cost_value = float(solder_bar_cost_value) if solder_bar_cost_value else 0.0
 
                         # Calculate the volume of solder per joint - Barrel Fill
 
                         # Calculate the Barrel Solder Vol
-                        barrel_solder_vol = (
-                            (math.pi * (barrel_dia ** 2) / 4) -
-                            (math.pi * ((barrel_dia - 2 * barrel_solder_thick) ** 2) / 4)
-                        ) * board_thick
+                        lead_thickness = barrel_dia - 0.4 # as per Ather guidelines
+                                                
+                        comp_lead_volume_in_the_barrel = math.pi * (((barrel_dia/2) ** 2) - ((lead_thickness/2) ** 2)) * board_thick
+
+                        barrel_volume_without_lead = math.pi * ((barrel_dia/2) ** 2) * board_thick
+
+                        barrel_solder_vol = barrel_volume_without_lead - comp_lead_volume_in_the_barrel
 
                         # Calculation of Barrel Solder Weight per Joint
                         barrel_solder_wt_per_joint = (barrel_solder_vol / 1000) * specific_gravity_of_solder  # Convert mm³ to cm³
@@ -612,6 +614,7 @@ if new_analysis:
 
                     with barrel1_col:
                         # Display the calculated value - Barrel Fill
+                        st.text_input('Lead Thickness(mm)', value=f"{lead_thickness:.2f}", key="lead_thickness", disabled=False)
                         st.text_input('Barrel Solder Vol(mm^3)', value=f"{barrel_solder_vol:.2f}", key="barrel_solder_vol", disabled=True) 
                         st.text_input('Barrel Solder Wt/Joint(g)', value=f"{barrel_solder_wt_per_joint:.4f}", key="barrel_solder_wt_per_joint", disabled=True) 
                         st.text_input('Barrel Solder Wt/Brd(g)', value=f"{barrel_solder_wt_per_board:.2f}", key="barrel_solder_wt_per_board", disabled=True) 
@@ -749,7 +752,7 @@ if new_analysis:
                                 "Bot Wt Estimate %","Bot Wastage %","Bot SP Thick(mm)","Bot SP Wt (100%)(g)","Bot SP Wt Estimate(g)","Bot SP Cost/Brd(₹)",  #Solder Paste - Bottom section
                                 "Flux Wastage %","Flux Cost(₹/ml)","Flux Area/Brd(mm^2)","Flux Spray Area(mm^2)","Flux Cost Per Board(₹)", #Flux Wave Soldering section
                                 "Pad OD (mm)","Pad ID (mm)","Solder Joints","Solder Thick (mm)","Solder Vol(mm^3)","Solder Wt/Joint(g)","Solder Wt/Brd(g)", # Circumferential Fill Solder Bar
-                                "Barrel Dia(mm)","Board Thick(mm)","Barrel Joints","Barrel Solder Thick(mm)","Solder Bar Cost(₹/g)","Barrel Solder Vol(mm^3)","Barrel Solder Wt/Joint(g)","Barrel Solder Wt/Brd(g)","Solder Bar Cost(₹/g)","Total Solder Wt(g)","Solder Bar Cost/Brd(₹)", # Barrel Fill Solder Bar
+                                "Barrel Dia(mm)","Board Thick(mm)","Barrel Joints","Lead Thickness(mm)","Solder Bar Cost(₹/g)","Barrel Solder Vol(mm^3)","Barrel Solder Wt/Joint(g)","Barrel Solder Wt/Brd(g)","Solder Bar Cost(₹/g)","Total Solder Wt(g)","Solder Bar Cost/Brd(₹)", # Barrel Fill Solder Bar
                                 "PCB (₹)","Electronics Component (₹)","Mechanical Component (₹)","NRE (₹)","Consumables (₹)", #Input Cost section
                                 "Select Annual Volume","MOH %","FOH %","Profit on RM %","Profit on VA %","R&D %","Warranty %","SG&A %", #OHP% Model Vs. Ann. Volume section
                                 "MOH (₹)","Profit on RM (₹)","FOH (₹)","Profit on VA (₹)","Material Cost (₹)","Manufacturing Cost (₹)","OH&P (₹)","R&D (₹)","Warranty (₹)","SG&A (₹)", #Cost Computation section
@@ -797,7 +800,7 @@ if new_analysis:
                             current_data.loc[0, "Barrel Dia(mm)"] = barrel_dia
                             current_data.loc[0, "Board Thick(mm)"] = board_thick
                             current_data.loc[0, "Barrel Joints"] = barrel_joints
-                            current_data.loc[0, "Barrel Solder Thick(mm)"] = barrel_solder_thick
+                            current_data.loc[0, "Lead Thickness(mm)"] = lead_thickness
                             current_data.loc[0, "Solder Bar Cost(₹/g)"] = solder_bar_cost_value
                             current_data.loc[0, "Barrel Solder Vol(mm^3)"] = barrel_solder_vol
                             current_data.loc[0, "Barrel Solder Wt/Joint(g)"] = barrel_solder_wt_per_joint
@@ -1246,7 +1249,6 @@ if existing_analysis:
             barrel_dia = st.text_input('Barrel Dia(mm)', value="", key="barrel_dia", disabled=False)
             board_thick = st.text_input('Board Thick(mm)', value="", key="board_thick", disabled=False)
             barrel_joints = st.text_input('Barrel Joints', value="", key="barrel_joints", disabled=False)
-            barrel_solder_thick = st.text_input('Barrel Solder Thick(mm)', value="", key="barrel_solder_thick", disabled=False)
 
         solder_bar_cost_value = 2.064
 
@@ -1255,16 +1257,19 @@ if existing_analysis:
             barrel_dia = float(barrel_dia) if barrel_dia else 0.0
             board_thick = float(board_thick) if board_thick else 0.0
             barrel_joints = float(barrel_joints) if barrel_joints else 0.0
-            barrel_solder_thick = float(barrel_solder_thick) if barrel_solder_thick else 0.0
+            # barrel_solder_thick = float(barrel_solder_thick) if barrel_solder_thick else 0.0
             solder_bar_cost_value = float(solder_bar_cost_value) if solder_bar_cost_value else 0.0
 
             # Calculate the volume of solder per joint - Barrel Fill
 
             # Calculate the Barrel Solder Vol
-            barrel_solder_vol = (
-                (math.pi * (barrel_dia ** 2) / 4) -
-                (math.pi * ((barrel_dia - 2 * barrel_solder_thick) ** 2) / 4)
-            ) * board_thick
+            lead_thickness = barrel_dia - 0.4 # as per Ather guidelines
+                                    
+            comp_lead_volume_in_the_barrel = math.pi * ((((barrel_dia/2) ** 2) - ((lead_thickness/2) ** 2)) * board_thick)
+
+            barrel_volume_without_lead = math.pi * ((barrel_dia/2) ** 2) * board_thick
+
+            barrel_solder_vol = barrel_volume_without_lead - comp_lead_volume_in_the_barrel
 
             # Calculation of Barrel Solder Weight per Joint
             barrel_solder_wt_per_joint = (barrel_solder_vol / 1000) * specific_gravity_of_solder  # Convert mm³ to cm³
@@ -1280,6 +1285,7 @@ if existing_analysis:
 
         with barrel1_col:
             # Display the calculated value - Barrel Fill
+            st.text_input('Lead Thickness(mm)', value=f"{lead_thickness:.2f}", key="lead_thickness", disabled=False)
             st.text_input('Barrel Solder Vol(mm^3)', value=f"{barrel_solder_vol:.2f}", key="barrel_solder_vol", disabled=True) 
             st.text_input('Barrel Solder Wt/Joint(g)', value=f"{barrel_solder_wt_per_joint:.4f}", key="barrel_solder_wt_per_joint", disabled=True) 
             st.text_input('Barrel Solder Wt/Brd(g)', value=f"{barrel_solder_wt_per_board:.2f}", key="barrel_solder_wt_per_board", disabled=True) 
@@ -1417,7 +1423,7 @@ if existing_analysis:
                     "Bot Wt Estimate %","Bot Wastage %","Bot SP Thick(mm)","Bot SP Wt (100%)(g)","Bot SP Wt Estimate(g)","Bot SP Cost/Brd(₹)",  #Solder Paste - Bottom section
                     "Flux Wastage %","Flux Cost(₹/ml)","Flux Area/Brd(mm^2)","Flux Spray Area(mm^2)","Flux Cost Per Board(₹)", #Flux Wave Soldering section
                     "Pad OD (mm)","Pad ID (mm)","Solder Joints","Solder Thick (mm)","Solder Vol(mm^3)","Solder Wt/Joint(g)","Solder Wt/Brd(g)", # Circumferential Fill Solder Bar
-                    "Barrel Dia(mm)","Board Thick(mm)","Barrel Joints","Barrel Solder Thick(mm)","Solder Bar Cost(₹/g)","Barrel Solder Vol(mm^3)","Barrel Solder Wt/Joint(g)","Barrel Solder Wt/Brd(g)","Solder Bar Cost(₹/g)","Total Solder Wt(g)","Solder Bar Cost/Brd(₹)", # Barrel Fill Solder Bar
+                    "Barrel Dia(mm)","Board Thick(mm)","Barrel Joints","Lead Thickness(mm)","Solder Bar Cost(₹/g)","Barrel Solder Vol(mm^3)","Barrel Solder Wt/Joint(g)","Barrel Solder Wt/Brd(g)","Solder Bar Cost(₹/g)","Total Solder Wt(g)","Solder Bar Cost/Brd(₹)", # Barrel Fill Solder Bar
                     "PCB (₹)","Electronics Component (₹)","Mechanical Component (₹)","NRE (₹)","Consumables (₹)", #Input Cost section
                     "Select Annual Volume","MOH %","FOH %","Profit on RM %","Profit on VA %","R&D %","Warranty %","SG&A %", #OHP% Model Vs. Ann. Volume section
                     "MOH (₹)","Profit on RM (₹)","FOH (₹)","Profit on VA (₹)","Material Cost (₹)","Manufacturing Cost (₹)","OH&P (₹)","R&D (₹)","Warranty (₹)","SG&A (₹)", #Cost Computation section
@@ -1465,7 +1471,7 @@ if existing_analysis:
                 current_data.loc[0, "Barrel Dia(mm)"] = barrel_dia
                 current_data.loc[0, "Board Thick(mm)"] = board_thick
                 current_data.loc[0, "Barrel Joints"] = barrel_joints
-                current_data.loc[0, "Barrel Solder Thick(mm)"] = barrel_solder_thick
+                current_data.loc[0, "Lead Thickness(mm)"] = lead_thickness
                 current_data.loc[0, "Solder Bar Cost(₹/g)"] = solder_bar_cost_value
                 current_data.loc[0, "Barrel Solder Vol(mm^3)"] = barrel_solder_vol
                 current_data.loc[0, "Barrel Solder Wt/Joint(g)"] = barrel_solder_wt_per_joint
