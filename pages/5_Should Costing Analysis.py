@@ -615,7 +615,7 @@ if new_analysis:
 
                     with barrel1_col:
                         # Display the calculated value - Barrel Fill
-                        st.text_input('Lead Thickness(mm)', value=f"{lead_thickness:.2f}", key="lead_thickness", disabled=False)
+                        st.text_input('Lead Thickness(mm)', value=f"{lead_thickness:.2f}", key="lead_thickness", disabled=True)
                         st.text_input('Barrel Solder Vol(mm^3)', value=f"{barrel_solder_vol:.2f}", key="barrel_solder_vol", disabled=True) 
                         st.text_input('Barrel Solder Wt/Joint(g)', value=f"{barrel_solder_wt_per_joint:.4f}", key="barrel_solder_wt_per_joint", disabled=True) 
                         st.text_input('Barrel Solder Wt/Brd(g)', value=f"{barrel_solder_wt_per_board:.2f}", key="barrel_solder_wt_per_board", disabled=True) 
@@ -1287,7 +1287,7 @@ if existing_analysis:
 
         with barrel1_col:
             # Display the calculated value - Barrel Fill
-            st.text_input('Lead Thickness(mm)', value=f"{lead_thickness:.2f}", key="lead_thickness", disabled=False)
+            st.text_input('Lead Thickness(mm)', value=f"{lead_thickness:.2f}", key="lead_thickness", disabled=True)
             st.text_input('Barrel Solder Vol(mm^3)', value=f"{barrel_solder_vol:.2f}", key="barrel_solder_vol", disabled=True) 
             st.text_input('Barrel Solder Wt/Joint(g)', value=f"{barrel_solder_wt_per_joint:.4f}", key="barrel_solder_wt_per_joint", disabled=True) 
             st.text_input('Barrel Solder Wt/Brd(g)', value=f"{barrel_solder_wt_per_board:.2f}", key="barrel_solder_wt_per_board", disabled=True) 
